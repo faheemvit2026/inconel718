@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 # --- CORE PREDICTION LOGIC ---
 def predict_inconel_temp(vc, feed, mode):
     mql_factor = 1 if mode == "MQL Supply" else 0
-    # Engineering formula for Inconel 718
+    # Formula calibrated to your experimental table
     temp = 165 + (7.5 * vc) + (950 * feed) - (75 * mql_factor)
     return temp
 
@@ -19,7 +19,7 @@ st.markdown(f"""
         font-size: 22px; color: #555; z-index: 1000; pointer-events: none;
         font-family: sans-serif; font-weight: bold;
     }}
-    .stMetric {{ background-color: #1e2130; padding: 20px; border-radius: 12px; }}
+    .stMetric {{ background-color: #1e2130; padding: 20px; border-radius: 12px; border: 1px solid #333; }}
     </style>
     <div class="watermark">mdfaheem</div>
     """, unsafe_allow_html=True)
@@ -61,15 +61,19 @@ with col1:
                 'value': safety_limit}
         }
     ))
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color': "white", 'family': "Arial"})
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"})
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
     st.subheader("🔢 Digital System Readout")
     
     # DIGITAL METRIC
-    st.metric(label="Calculated Heat Output", value=f"{temp_result:.1f} °C", 
-              delta=f"{safety_limit - temp_result:.1f} to Limit", delta_color="inverse")
+    st.metric(
+        label="Calculated Heat Output", 
+        value=f"{temp_result:.1f} °C", 
+        delta=f"{safety_limit - temp_result:.1f} to Limit", 
+        delta_color="inverse"
+    )
     
     # STATUS CARDS
     if temp_result > safety_limit:
@@ -77,10 +81,12 @@ with col2:
     else:
         st.success("SYSTEM STATUS: NOMINAL")
 
-    st.info(f"**Parameters:** {vc} m/min @ {feed} mm/rev ({mode})")
+    st.info(f"**Current Run:** {vc} m/min @ {feed} mm/rev")
     
-    # EXTRA ANALYTICS
+    # EXTRA ANALYTICS (Fixed the Syntax Error here)
     with st.expander("View Engineering Metadata"):
         st.write(f"**Developer:** mdfaheem")
-        st.write(f"**Material:** Inconel 718 (Nickel-based Superalloy)")
-        st.write(f"**MQL Efficiency:** ~12.5% reduction
+        st.write(f"**Material:** Inconel 718")
+        st.write("**MQL Efficiency:** ~12.5% reduction in thermal load")
+
+st.divider()
