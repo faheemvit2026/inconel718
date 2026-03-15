@@ -87,6 +87,6 @@ with col2:
     st.write("### Prediction Context")
     st.info(f"Model trained on {len(df)} experimental data points from Inconel 718 trials.")
     st.write(f"**Cooling Mode:** {in_mode}")
-    st.write(f"**Watermark:** mdfaheem")
+    
 
 st.divider()
