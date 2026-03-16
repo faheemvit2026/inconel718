@@ -4,8 +4,7 @@ import plotly.graph_objects as go
 import math
 from sklearn.ensemble import RandomForestRegressor
 
-# --- 1. CLEANED DATASET ---
-# I've kept only the most consistent values to ensure the AI logic is "proper"
+# --- 1. CLEANED DATASET (Consistent Values Only) ---
 clean_data = {
     'Speed': [30, 40, 50, 60, 80, 100, 30, 45, 60, 75, 50, 70, 85, 90, 92.9, 80, 70, 85, 60],
     'Feed': [0.05, 0.05, 0.08, 0.08, 0.1, 0.15, 0.1, 0.1, 0.1, 0.1, 0.06, 0.12, 0.12, 0.1, 0.1, 0.1, 0.08, 0.08, 0.15],
@@ -15,72 +14,65 @@ clean_data = {
 }
 
 df = pd.DataFrame(clean_data)
-model = RandomForestRegressor(n_estimators=100, random_state=42).fit(df[['Speed', 'Feed', 'DOC', 'Cooling']], df['Temp'])
+# Training on cleaned data: Speed, Feed, Depth of Cut, and Cooling Mode
+X = df[['Speed', 'Feed', 'DOC', 'Cooling']]
+y = df['Temp']
+model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
 
-# --- 2. LAYOUT & WATERMARK ---
+# --- 2. LAYOUT & BRANDING ---
 st.set_page_config(page_title="Inconel AI Command", layout="wide")
 
-# Simplified Watermark to ensure visibility
+# Persistent Watermark
 st.markdown("""
     <style>
     .watermark {
         position: fixed;
         bottom: 10px;
-        right: 10px;
-        color: rgba(150, 150, 150, 0.5);
-        font-family: monospace;
-        z-index: 99;
+        right: 15px;
+        color: rgba(150, 150, 150, 0.4);
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        z-index: 1000;
+        pointer-events: none;
     }
     </style>
     <div class="watermark">mdfaheem</div>
     """, unsafe_allow_html=True)
 
 st.title("🛡️ Inconel 718 Machining Intelligence")
-st.write("Professional Thermal Prediction & RPM Calculator")
+st.caption("AI Thermal Predictor & RPM Calculator | Developed by mdfaheem")
+st.divider()
 
-# --- 3. INPUT SECTION (Manual Typing) ---
+# --- 3. PARAMETER INPUTS (Manual Entry) ---
 st.sidebar.header("🕹️ Parameters")
 
-# Manual inputs instead of sliders for precision
-dia = st.sidebar.number_input("Rod Diameter (mm)", value=25.0)
-in_speed = st.sidebar.number_input("Cutting Speed Vc (m/min)", value=60.0)
+# Text/Number inputs for accuracy
+dia = st.sidebar.number_input("Rod Diameter (mm)", value=25.0, format="%.2f")
+in_speed = st.sidebar.number_input("Cutting Speed Vc (m/min)", value=60.0, format="%.2f")
 in_feed = st.sidebar.number_input("Feed Rate f (mm/rev)", value=0.10, format="%.3f")
-in_doc = st.sidebar.number_input("Depth of Cut ap (mm)", value=0.50)
+in_doc = st.sidebar.number_input("Depth of Cut ap (mm)", value=0.50, format="%.2f")
 in_mode = st.sidebar.selectbox("Cooling Strategy", ["Dry", "MQL"])
 in_cooling = 1 if in_mode == "MQL" else 0
 
-# --- 4. CALCULATIONS ---
-# RPM Calculation
+# --- 4. ENGINE CALCULATIONS ---
+# Spindle Speed Logic
 calc_rpm = (1000 * in_speed) / (math.pi * dia)
 
-# Temp Prediction
-prediction = model.predict([[in_speed, in_feed, in_doc, in_cooling]])[0]
+# Machine Learning Prediction
+# Prepare input array for the model
+input_features = [[in_speed, in_feed, in_doc, in_cooling]]
+prediction = model.predict(input_features)[0]
 
-# --- 5. VISUAL DASHBOARD ---
+# --- 5. DASHBOARD VISUALS ---
+# Top Row: Digital Readouts
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("Spindle Speed", f"{int(calc_rpm)} RPM")
+    st.caption(f"Calculated for D={dia}mm")
+with col2:
+    st.metric("Predicted Temperature", f"{prediction:.1f} °C")
+    st.caption("AI Prediction (Random Forest)")
+
 st.divider()
 
-# Top Row: Metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("Spindle Speed", f"{int(calc_rpm)} RPM")
-col2.metric("Predicted Temp", f"{prediction:.1f} °C")
-col3.metric("Cooling Mode", in_mode)
-
-st.divider()
-
-# Bottom Row: Analog Gauge
-fig = go.Figure(go.Indicator(
-    mode = "gauge+number",
-    value = prediction,
-    title = {'text': "Analog Heat Monitor (°C)"},
-    gauge = {
-        'axis': {'range': [None, 1200]},
-        'bar': {'color': "cyan"},
-        'steps': [
-            {'range': [0, 600], 'color': "green"},
-            {'range': [600, 950], 'color': "orange"},
-            {'range': [950, 1200], 'color': "red"}]
-    }
-))
-
-fig.update_layout(height=450)
-st.plotly_
+# Bottom Row
