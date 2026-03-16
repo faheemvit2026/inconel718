@@ -21,15 +21,43 @@ X, y = df_ml[features], df_ml['Temp']
 rf_model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
 lr_model = LinearRegression().fit(X, y)
 
-# --- 2. LAYOUT ---
+# --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Inconel AI Precision Hub", layout="wide")
-st.markdown('<div style="position:fixed;bottom:10px;right:15px;color:rgba(150,150,150,0.3);font-weight:bold;">mdfaheem</div>', unsafe_allow_html=True)
 
-st.title("🛡️ Inconel 718: Thermal Precision Center")
+# Custom CSS for the footer and branding
+st.markdown("""
+    <style>
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #0e1117;
+        color: white;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+        border-top: 1px solid #333;
+        z-index: 999;
+    }
+    .header-name {
+        color: #ff9900;
+        font-weight: bold;
+        font-size: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- 3. INPUT SIDEBAR ---
-st.sidebar.header("🕹️ Controls")
-dia = st.sidebar.number_input("Diameter (mm)", value=25.0, format="%.4f")
+# --- 3. HEADER & BRANDING ---
+col_h1, col_h2 = st.columns([3, 1])
+with col_h1:
+    st.title("🛡️ Inconel 718: Thermal Command Center")
+with col_h2:
+    st.markdown("<br><p class='header-name'>Mohammed Faheem M S</p>", unsafe_allow_html=True)
+
+# --- 4. INPUT SIDEBAR ---
+st.sidebar.header("🕹️ Parameters")
+dia = st.sidebar.number_input("Rod Diameter (mm)", value=25.0, format="%.4f")
 in_speed = st.sidebar.number_input("Speed Vc (m/min)", value=60.0, format="%.4f")
 in_feed = st.sidebar.number_input("Feed f (mm/rev)", value=0.1, format="%.4f")
 in_doc = st.sidebar.number_input("DOC ap (mm)", value=0.5, format="%.4f")
@@ -40,7 +68,7 @@ rf_pred = rf_model.predict([[in_speed, in_feed, in_doc]])[0]
 lr_pred = lr_model.predict([[in_speed, in_feed, in_doc]])[0]
 variance = (abs(rf_pred - lr_pred) / rf_pred) * 100
 
-# --- 4. THE ANALOGUE GAUGES (RESTORED) ---
+# --- 5. ANALOGUE GAUGES ---
 col_rpm, col_temp = st.columns(2)
 
 with col_rpm:
@@ -59,23 +87,27 @@ with col_temp:
     ))
     st.plotly_chart(fig_temp, use_container_width=True)
 
-# --- 5. INTERACTIVE VARIANCE GRAPH (PLOTLY) ---
+# --- 6. MODEL VARIANCE GRAPH ---
 st.divider()
-st.subheader("📊 Model Variance Comparison (12.94% Gap Analysis)")
+st.subheader("📊 Variance Analysis (AI vs Linear Baseline)")
 
 y_rf_all = rf_model.predict(X)
 y_lr_all = lr_model.predict(X)
 sorted_idx = np.argsort(y)
 
 fig_var = go.Figure()
-# Actual Data
-fig_var.add_trace(go.Scatter(y=np.sort(y), mode='markers', name='Actual Experiments', marker=dict(color='gray', opacity=0.5)))
-# AI Line
-fig_var.add_trace(go.Scatter(y=y_rf_all[sorted_idx], mode='lines', name='AI Prediction (RF)', line=dict(color='#ff9900', width=3)))
-# Linear Line
+fig_var.add_trace(go.Scatter(y=np.sort(y), mode='markers', name='Experimental Data', marker=dict(color='gray', opacity=0.4)))
+fig_var.add_trace(go.Scatter(y=y_rf_all[sorted_idx], mode='lines', name='AI Prediction', line=dict(color='#ff9900', width=3)))
 fig_var.add_trace(go.Scatter(y=y_lr_all[sorted_idx], mode='lines', name='Linear Baseline', line=dict(color='cyan', dash='dash')))
 
-fig_var.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+fig_var.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"))
 st.plotly_chart(fig_var, use_container_width=True)
 
-st.info(f"💡 Current Model Variance: **{variance:.2f}%**. This confirms the complex, non-linear thermal behavior of Inconel 718.")
+# --- 7. FIXED FOOTER ---
+st.markdown(f"""
+    <div class="footer">
+        Developed and Managed by <b>Mohammed Faheem M S</b> | Inconel 718 Machining Research 2026
+    </div>
+    """, unsafe_allow_html=True)
+
+st.info(f"Model Variance identified at **{variance:.2f}%**. This justifies the requirement for an AI-driven predictive model.")
