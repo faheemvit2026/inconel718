@@ -89,7 +89,7 @@ fig_parity.add_trace(go.Scatter(x=y, y=y_pred_all, mode='markers', name='AI Obse
 
 fig_parity.update_layout(
     template="plotly_dark", height=500,
-    xaxis_title="Experimental Result (FLIR Camera) °C",
+    xaxis_title="Experimental Result °C",
     yaxis_title="AI Model Prediction °C",
     legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
