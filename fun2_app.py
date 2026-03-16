@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
 
 # --- 1. DATA SOURCE ---
 dry_data = {
@@ -15,41 +14,30 @@ dry_data = {
 df = pd.DataFrame(dry_data)
 X, y = df[['Speed', 'Feed', 'DOC']], df['Temp']
 
-# --- 2. MODEL TRAINING ---
+# --- 2. RESIDUAL CALCULATION ---
 rf = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-lr = LinearRegression().fit(X, y)
+y_pred = rf.predict(X)
+residuals = y - y_pred  # Actual - Predicted
 
-y_rf = rf.predict(X)
-y_lr = lr.predict(X)
+# --- 3. PLOTLY RESIDUAL GRAPH ---
+fig_res = go.Figure()
 
-# --- 3. PLOTLY REGRESSION GRAPH ---
-fig = go.Figure()
+# Zero Error Line
+fig_res.add_shape(type="line", x0=y_pred.min(), y0=0, x1=y_pred.max(), y1=0,
+                  line=dict(color="white", width=2, dash="dash"))
 
-# Perfect Prediction Line
-max_val = max(y.max(), y_rf.max())
-min_val = min(y.min(), y_rf.min())
-fig.add_trace(go.Scatter(x=[min_val, max_val], y=[min_val, max_val], 
-                         mode='lines', name='Ideal Prediction (Identity)', 
-                         line=dict(color='white', dash='dash', width=1)))
+# Residual Points
+fig_res.add_trace(go.Scatter(x=y_pred, y=residuals, mode='markers',
+                             marker=dict(color='#ff9900', size=10, 
+                                         line=dict(width=1, color='white'))))
 
-# Random Forest Predictions
-fig.add_trace(go.Scatter(x=y, y=y_rf, mode='markers', name='AI Prediction (RF)', 
-                         marker=dict(color='#ff9900', size=10, opacity=0.7, 
-                                     line=dict(width=1, color='white'))))
-
-# Linear Regression Predictions
-fig.add_trace(go.Scatter(x=y, y=y_lr, mode='markers', name='Linear Baseline', 
-                         marker=dict(color='cyan', size=8, symbol='x', opacity=0.5)))
-
-fig.update_layout(
-    title="Regression Analysis: Actual vs. Predicted Temperature",
-    xaxis_title="Actual Experimental Temperature (°C)",
-    yaxis_title="Model Predicted Temperature (°C)",
+fig_res.update_layout(
+    title="Residual Plot: AI Prediction Errors",
+    xaxis_title="Predicted Temperature (°C)",
+    yaxis_title="Residual (Error in °C)",
     template="plotly_dark",
-    height=600,
-    legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
+    height=450
 )
 
-st.plotly_chart(fig, use_container_width=True)
-
+st.plotly_chart(fig_res, use_container_width=True)
 st.markdown("Developed by **Mohammed Faheem M S**")
