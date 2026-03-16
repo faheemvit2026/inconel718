@@ -16,70 +16,85 @@ dry_data = {
 df_ml = pd.DataFrame(dry_data)
 X, y = df_ml[['Speed', 'Feed', 'DOC']], df_ml['Temp']
 
-# --- 2. AI MODEL & GLOBAL ERROR ---
+# --- 2. AI MODEL VALIDATION ---
 rf_model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
 y_pred_all = rf_model.predict(X)
 mape = mean_absolute_percentage_error(y, y_pred_all) * 100
-mae = mean_absolute_error(y, y_pred_all)
 accuracy_pct = 100 - mape
 
-# --- 3. UI SETUP ---
-st.set_page_config(page_title="Inconel Research | Mohammed Faheem M S", layout="wide")
+# --- 3. UI CONFIG ---
+st.set_page_config(page_title="Inconel Research Center", layout="wide")
 
+# Custom Professional Styling
 st.markdown("""
     <style>
-    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #0e1117; color: white; text-align: center; padding: 10px; font-size: 14px; border-top: 1px solid #333; z-index: 100; }
+    .main { background-color: #0d1117; }
+    .stMetric { background-color: #161b22; border: 1px solid #30363d; padding: 15px; border-radius: 8px; }
+    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #0d1117; color: #8b949e; text-align: center; padding: 10px; border-top: 1px solid #30363d; z-index: 100; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. BRANDING ---
-st.title("🛡️ Inconel 718: Thermal Precision Center")
-st.markdown("Developed by **Mohammed Faheem M S**")
+# --- 4. HEADER ---
+st.title("🛡️ Inconel 718: Thermal Precision Interface")
+st.markdown(f"Advanced Predictive Analytics | Developed by **Mohammed Faheem M S**")
 st.divider()
 
-# --- 5. SIDEBAR CONTROLS ---
-st.sidebar.header("⚙️ Machine Parameters")
-dia = st.sidebar.number_input("Workpiece Diameter (mm)", value=25.0, format="%.10f")
-in_speed = st.sidebar.number_input("Speed Vc (m/min)", value=60.0, format="%.10f")
-in_feed = st.sidebar.number_input("Feed f (mm/rev)", value=0.1, format="%.10f")
-in_doc = st.sidebar.number_input("DOC ap (mm)", value=0.5, format="%.10f")
+# --- 5. SIDEBAR & LIVE CALCULATION ---
+st.sidebar.header("🕹️ Experimental Parameters")
+dia = st.sidebar.number_input("Workpiece Diameter (mm)", value=25.0, format="%.4f")
+in_speed = st.sidebar.number_input("Cutting Speed (m/min)", value=60.0, format="%.4f")
+in_feed = st.sidebar.number_input("Feed Rate (mm/rev)", value=0.1, format="%.4f")
+in_doc = st.sidebar.number_input("Depth of Cut (mm)", value=0.5, format="%.4f")
 
 # Real-time Prediction
 calc_rpm = (1000 * in_speed) / (math.pi * dia)
 live_pred = rf_model.predict([[in_speed, in_feed, in_doc]])[0]
 
-# --- 6. INSTRUMENTATION (GAUGES) ---
-col1, col2 = st.columns(2)
-with col1:
+# --- 6. INSTRUMENTATION GAUGES ---
+c1, c2 = st.columns(2)
+with c1:
     fig_rpm = go.Figure(go.Indicator(mode="gauge+number", value=calc_rpm, 
-        number={'valueformat': "f", 'font': {'size': 32}}, title={'text': "SPINDLE RPM", 'font': {'color': 'cyan'}},
-        gauge={'axis': {'range': [0, 4000]}, 'bar': {'color': "cyan"}}))
+        number={'valueformat': ".2f", 'font': {'size': 40, 'color': 'white'}},
+        title={'text': "SPINDLE SPEED (RPM)", 'font': {'size': 18, 'color': '#58a6ff'}},
+        gauge={'axis': {'range': [0, 4000], 'tickcolor': "white"}, 'bar': {'color': "#58a6ff"}}))
+    fig_rpm.update_layout(height=350, margin=dict(t=50, b=20), paper_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig_rpm, use_container_width=True)
 
-with col2:
+with c2:
     fig_temp = go.Figure(go.Indicator(mode="gauge+number", value=live_pred, 
-        number={'valueformat': "f", 'font': {'size': 32}}, title={'text': "PREDICTED TEMP (°C)", 'font': {'color': '#ff9900'}},
-        gauge={'axis': {'range': [0, 1300]}, 'bar': {'color': "#ff9900"}}))
+        number={'valueformat': ".2f", 'font': {'size': 40, 'color': 'white'}},
+        title={'text': "PREDICTED TEMPERATURE (°C)", 'font': {'size': 18, 'color': '#ff7b72'}},
+        gauge={'axis': {'range': [0, 1300], 'tickcolor': "white"}, 'bar': {'color': "#ff7b72"}}))
+    fig_temp.update_layout(height=350, margin=dict(t=50, b=20), paper_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig_temp, use_container_width=True)
 
-# --- 7. ACCURACY METRICS ---
-st.subheader("📊 Research & Error Metrics")
-m1, m2, m3 = st.columns(3)
-m1.metric("Model Accuracy", f"{accuracy_pct:.2f}%")
-m2.metric("Error Percentage (MAPE)", f"{mape:.2f}%")
-m3.metric("Avg Error (MAE)", f"{mae:.2f} °C")
+# --- 7. KEY PERFORMANCE INDICATORS (KPIs) ---
+st.subheader("📊 Statistical Reliability")
+k1, k2, k3 = st.columns(3)
+k1.metric("Model Confidence (Accuracy)", f"{accuracy_pct:.2f}%")
+k2.metric("Relative Error (MAPE)", f"{mape:.2f}%")
+k3.metric("Live Prediction Variable", f"{live_pred:.2f} °C")
 
 st.divider()
 
-# --- 8. EXPERIMENTAL VALIDATION TABLE ---
-st.subheader("📋 Actual vs. Predicted Results")
-comparison_df = pd.DataFrame({
-    "Actual Temp (°C)": y,
-    "AI Predicted Temp (°C)": y_pred_all,
-    "Absolute Error (°C)": np.abs(y - y_pred_all),
-    "Error (%)": (np.abs(y - y_pred_all) / y) * 100
-})
-st.dataframe(comparison_df.style.format("{:.4f}"), use_container_width=True)
+# --- 8. RESEARCH VALIDATION GRAPH ---
+st.subheader("📈 Regression Analysis: Actual vs. Predicted")
+fig_parity = go.Figure()
+# Identity Line
+fig_parity.add_trace(go.Scatter(x=[y.min(), y.max()], y=[y.min(), y.max()], 
+                                mode='lines', name='Ideal Fit', line=dict(color='#8b949e', dash='dash')))
+# Actual Data Points
+fig_parity.add_trace(go.Scatter(x=y, y=y_pred_all, mode='markers', name='AI Observations', 
+                                marker=dict(color='#ff7b72', size=10, opacity=0.7, line=dict(width=1, color='white'))))
+
+fig_parity.update_layout(
+    template="plotly_dark", height=500,
+    xaxis_title="Experimental Result (FLIR Camera) °C",
+    yaxis_title="AI Model Prediction °C",
+    legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
+)
+st.plotly_chart(fig_parity, use_container_width=True)
 
 # --- 9. FOOTER ---
-st.markdown(f'<div class="footer">Developed by <b>Mohammed Faheem M S</b> | 2026 Research</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="footer">Developed by <b>Mohammed Faheem M S</b> | Inconel 718 Research Hub © 2026</div>', unsafe_allow_html=True)
