@@ -34,13 +34,19 @@ st.divider()
 
 # --- 3. INPUTS ---
 st.sidebar.header("🕹️ MACHINE INPUTS")
-dia = st.sidebar.number_input("Workpiece Diameter D (mm)", value=25.0, step=1.0)
+# Added min_value=0.1 to prevent ZeroDivisionError
+dia = st.sidebar.number_input("Workpiece Diameter D (mm)", value=25.0, min_value=0.1, step=1.0)
 in_speed = st.sidebar.number_input("Cutting Speed Vc (m/min)", value=60.0, step=1.0)
 in_feed = st.sidebar.number_input("Feed Rate f (mm/rev)", value=0.100, format="%.3f", step=0.005)
 in_doc = st.sidebar.number_input("Depth of Cut ap (mm)", value=0.50, format="%.2f", step=0.05)
 
 # --- 4. ENGINE CALCULATIONS ---
-calc_rpm = (1000 * in_speed) / (math.pi * dia)
+# Safe calculation for RPM
+if dia > 0:
+    calc_rpm = (1000 * in_speed) / (math.pi * dia)
+else:
+    calc_rpm = 0
+
 prediction = model.predict([[in_speed, in_feed, in_doc]])[0]
 
 # --- 5. DUAL SPEEDOMETER GAUGES ---
