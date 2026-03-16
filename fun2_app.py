@@ -62,3 +62,23 @@ fig = go.Figure(go.Indicator(
     value = prediction,
     title = {'text': "Analog Thermal Monitor (°C)"},
     gauge = {
+        'axis': {'range': [100, 1300]},
+        'bar': {'color': "cyan"},
+        'steps': [
+            {'range': [0, 650], 'color': "#0e3321"},
+            {'range': [650, 950], 'color': "#332c0e"},
+            {'range': [950, 1300], 'color': "#330e0e"}]
+    }
+))
+fig.update_layout(height=400)
+st.plotly_chart(fig, use_container_width=True)
+
+# Advisories
+if prediction >= 950:
+    st.error(f"🔴 **CRITICAL:** High Heat ({prediction:.1f}°C). Expect rapid crater wear on Carbide Tool.")
+elif prediction >= 650:
+    st.warning(f"🟡 **MODERATE:** Stable cutting, but monitor for heat-induced softening.")
+else:
+    st.success(f"🟢 **OPTIMAL:** Low thermal load for Dry Turning.")
+
+st.info(f"**Developer Note:** Prediction based on {len(df)} curated Dry Machining trials.")
