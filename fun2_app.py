@@ -27,7 +27,7 @@ mape = mean_absolute_percentage_error(y_actual, y_pred) * 100
 accuracy = 100 - mape
 
 # --- 3. UI SETUP ---
-st.set_page_config(page_title="Inconel 718 High-Precision Analysis", layout="wide")
+st.set_page_config(page_title="Inconel 718 AI Temperature Prediction", layout="wide")
 st.markdown("""<style>.stMetric { background-color: #161b22; border: 1px solid #30363d; padding: 15px; border-radius: 8px; }</style>""", unsafe_allow_html=True)
 
 st.title("🛡️ Inconel 718: Thermal Precision Interface")
