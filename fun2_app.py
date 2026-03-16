@@ -5,7 +5,7 @@ import math
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
-# --- 1. CLEANED DATASET (DRY ONLY) ---
+# --- 1. CLEANED DRY DATASET ---
 dry_data = {
     'Speed': [60, 75, 90, 80, 100, 60, 75, 60, 30, 40, 50, 60, 80, 100, 30, 45, 60, 75, 100, 50, 50, 50, 75, 75, 75, 100, 100, 40, 55, 70, 85, 100, 60, 60, 60, 90, 90, 90, 60, 75, 90, 80, 100, 60, 75, 60, 75, 90, 50, 70, 90, 60, 80, 100, 200, 300],
     'Feed': [0.1, 0.1, 0.1, 0.12, 0.12, 0.1, 0.1, 0.15, 0.05, 0.05, 0.08, 0.08, 0.1, 0.15, 0.1, 0.1, 0.1, 0.1, 0.1, 0.06, 0.08, 0.1, 0.06, 0.08, 0.1, 0.06, 0.08, 0.12, 0.12, 0.12, 0.12, 0.12, 0.05, 0.1, 0.15, 0.05, 0.1, 0.15, 0.1, 0.1, 0.1, 0.12, 0.12, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.15, 0.15, 0.12, 0.12],
@@ -20,7 +20,7 @@ y = df_ml['Temp']
 model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
 
 # --- 2. LAYOUT ---
-st.set_page_config(page_title="Inconel AI Command Center", layout="wide")
+st.set_page_config(page_title="Inconel AI Precision Center", layout="wide")
 
 st.markdown("""
     <style>
@@ -30,77 +30,70 @@ st.markdown("""
     <div class="watermark">mdfaheem</div>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ Inconel 718: Self-Thinking AI Command")
-st.caption("Real-time Reasoning Engine for Dry Machining | Developed by mdfaheem")
+st.title("🛡️ Inconel 718: High-Precision AI Command")
+st.caption("Exact Numerical Analysis for Dry Machining | Developed by mdfaheem")
 
 # --- 3. INPUT SIDEBAR ---
 st.sidebar.header("🕹️ Parameters")
-dia = st.sidebar.number_input("Diameter (mm)", value=25.0, min_value=0.1)
-in_speed = st.sidebar.number_input("Speed Vc (m/min)", value=60.0)
-in_feed = st.sidebar.number_input("Feed f (mm/rev)", value=0.100, format="%.3f")
-in_doc = st.sidebar.number_input("DOC ap (mm)", value=0.50)
+dia = st.sidebar.number_input("Diameter (mm)", value=25.0000, min_value=0.1000, format="%.4f")
+in_speed = st.sidebar.number_input("Speed Vc (m/min)", value=60.0000, format="%.4f")
+in_feed = st.sidebar.number_input("Feed f (mm/rev)", value=0.1000, format="%.4f")
+in_doc = st.sidebar.number_input("DOC ap (mm)", value=0.5000, format="%.4f")
 
-# --- 4. AI CORE ---
+# --- 4. ENGINE CALCULATIONS ---
+# Exact calculation without truncation
 calc_rpm = (1000 * in_speed) / (math.pi * dia)
 current_input = [[in_speed, in_feed, in_doc]]
 prediction = model.predict(current_input)[0]
 
-# AI Reasoning: Calculate what's driving the heat
+# AI Reasoning
 importances = model.feature_importances_
 dominant_factor = features[np.argmax(importances)]
 
-# --- 5. VISUALS ---
+# --- 5. VISUALS (Speedometers) ---
 col_rpm, col_temp = st.columns(2)
 
 with col_rpm:
     fig_rpm = go.Figure(go.Indicator(
         mode = "gauge+number", value = calc_rpm,
-        title = {'text': "SPINDLE RPM", 'font': {'color': 'cyan'}},
-        gauge = {'axis': {'range': [0, 4000]}, 'bar': {'color': "cyan"},
-                 'steps': [{'range': [0, 3500], 'color': "#0e2a33"}, {'range': [3500, 4000], 'color': "#451a1a"}]}
+        number = {'valueformat': ".4f"}, # Exact decimal display
+        title = {'text': "EXACT RPM", 'font': {'color': 'cyan'}},
+        gauge = {'axis': {'range': [0, 4000]}, 'bar': {'color': "cyan"}}
     ))
     st.plotly_chart(fig_rpm, use_container_width=True)
 
 with col_temp:
     fig_temp = go.Figure(go.Indicator(
         mode = "gauge+number", value = prediction,
-        title = {'text': "AI PREDICTED TEMP (°C)", 'font': {'color': '#ff9900'}},
-        gauge = {'axis': {'range': [0, 1300]}, 'bar': {'color': "#ff9900"},
-                 'steps': [{'range': [0, 650], 'color': "#0e3321"}, {'range': [650, 950], 'color': "#332c0e"}, {'range': [950, 1300], 'color': "#330e0e"}]}
+        number = {'valueformat': ".4f"}, # Exact decimal display
+        title = {'text': "EXACT AI TEMP (°C)", 'font': {'color': '#ff9900'}},
+        gauge = {'axis': {'range': [0, 1300]}, 'bar': {'color': "#ff9900"}}
     ))
     st.plotly_chart(fig_temp, use_container_width=True)
 
-# --- 6. THE "SELF-THINKING" ASPECT ---
+# --- 6. SELF-THINKING REASONING ---
 st.divider()
-st.subheader("🧠 AI Internal Reasoning")
+st.subheader("🧠 High-Precision AI Reasoning")
 
 box1, box2 = st.columns([2, 1])
 
 with box1:
     st.markdown(f"""
     <div class="ai-box">
-    <h4>🤖 Why is the temperature {prediction:.1f}°C?</h4>
-    <p>The AI has analyzed your inputs and determined that <b>{dominant_factor}</b> is currently the primary driver of thermal energy in this cut.</p>
+    <h4>🤖 Why is the exact temperature {prediction:.6f}°C?</h4>
+    <p>The AI Model has calculated a specific value based on the weighted sum of 100 decision trees.</p>
     <ul>
-        <li><b>Thermal Observation:</b> At {in_speed} m/min, the plastic deformation of Inconel 718 is localized at the tool tip.</li>
-        <li><b>Machinability Insight:</b> Dry machining relies on chip evacuation to carry away heat. Increasing {dominant_factor} further may exceed the tool's thermal threshold.</li>
+        <li><b>Calculated RPM:</b> {calc_rpm:.6f}</li>
+        <li><b>Primary Driver:</b> {dominant_factor} (Weight: {importances[np.argmax(importances)]:.4f})</li>
+        <li><b>Prediction Logic:</b> The model identified {len(df_ml)} dry-turning patterns to reach this specific thermal estimate.</li>
     </ul>
     </div>
     """, unsafe_allow_html=True)
 
 with box2:
-    # Small chart showing what the AI is thinking about
     fig_imp = go.Figure(go.Bar(
         x=features, y=importances,
         marker_color=['#00ccff', '#00ffcc', '#ffcc00']
     ))
-    fig_imp.update_layout(title="AI Feature Weight", height=200, margin=dict(l=20,r=20,t=40,b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    fig_imp.update_layout(title="Thinking Weights", height=200, margin=dict(l=20,r=20,t=40,b=20))
     st.plotly_chart(fig_imp, use_container_width=True)
-
-# Safety Alerts
-if prediction > 950:
-    st.error("🚨 **CRITICAL:** AI detects high risk of Diffusion Wear. Lower the Speed immediately.")
-elif prediction > 650:
-    st.warning("⚠️ **STABLE BUT HOT:** AI suggests monitoring tool edge for 'BUE' (Built-up Edge).")
-else:
-    st.success("✅ **OPTIMAL:** AI confirms these parameters are safe for long-duration machining.")
