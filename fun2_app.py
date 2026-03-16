@@ -21,7 +21,7 @@ model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
 # --- 2. LAYOUT & BRANDING ---
 st.set_page_config(page_title="Inconel AI Analytics", layout="wide")
 
-# Persistent mdfaheem watermark
+# mdfaheem watermark
 st.markdown("""
     <style>
     .watermark {
@@ -37,7 +37,56 @@ st.title("🛡️ Inconel 718 Machining Intelligence")
 st.caption("AI Thermal Analytics Dashboard | Developed by mdfaheem")
 st.divider()
 
-# --- 3. INPUT SECTION (Manual Entry Only) ---
+# --- 3. INPUT SECTION (Manual Entry) ---
 st.sidebar.header("🕹️ Parameters")
-dia = st.sidebar.number_input("Rod Diameter (mm)", value=25.0, format="%.2f")
-in_speed = st.sidebar.number_input("Cutting Speed Vc (m/min)", value=60
+dia = st.sidebar.number_input("Rod Diameter (mm)", value=25.0)
+in_speed = st.sidebar.number_input("Cutting Speed Vc (m/min)", value=60.0)
+in_feed = st.sidebar.number_input("Feed Rate f (mm/rev)", value=0.10, format="%.3f")
+in_doc = st.sidebar.number_input("Depth of Cut ap (mm)", value=0.50)
+in_mode = st.sidebar.selectbox("Cooling Strategy", ["Dry", "MQL"])
+in_cooling = 1 if in_mode == "MQL" else 0
+
+# --- 4. ENGINE CALCULATIONS ---
+calc_rpm = (1000 * in_speed) / (math.pi * dia)
+prediction = model.predict([[in_speed, in_feed, in_doc, in_cooling]])[0]
+
+# --- 5. DASHBOARD VISUALS ---
+# DIGITAL READOUTS
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Spindle Speed", f"{int(calc_rpm)} RPM")
+with col2:
+    st.metric("Predicted Temp", f"{prediction:.1f} °C")
+with col3:
+    status_label = "OPTIMAL" if prediction < 600 else "MODERATE" if prediction < 900 else "CRITICAL"
+    st.metric("System Status", status_label)
+
+st.divider()
+
+# ANALOG GAUGE
+fig = go.Figure(go.Indicator(
+    mode = "gauge+number",
+    value = prediction,
+    title = {'text': "Analog Thermal Monitor (°C)", 'font': {'size': 20}},
+    gauge = {
+        'axis': {'range': [0, 1200]},
+        'bar': {'color': "cyan"},
+        'steps': [
+            {'range': [0, 600], 'color': "#0e3321"},
+            {'range': [600, 900], 'color': "#332c0e"},
+            {'range': [900, 1200], 'color': "#330e0e"}]
+    }
+))
+fig.update_layout(height=400, margin=dict(l=20, r=20, t=50, b=20))
+st.plotly_chart(fig, use_container_width=True)
+
+# STATUS WARNINGS
+st.subheader("📋 Operational Advisory")
+if prediction >= 900:
+    st.error(f"🔴 **CRITICAL TEMP:** Predicted at {prediction:.1f}°C. Extreme risk of tool failure. Reduce Vc or check MQL flow.")
+elif prediction >= 600:
+    st.warning(f"🟡 **MODERATE TEMP:** Predicted at {prediction:.1f}°C. Machining is stable but monitor tool wear closely.")
+else:
+    st.success(f"🟢 **OPTIMAL TEMP:** Predicted at {prediction:.1f}°C. Ideal thermal window for Inconel 718 longevity.")
+
+st.info(f"Summary: Machining {dia}mm rod at {in_speed}m/min using {in_mode} cooling.")
