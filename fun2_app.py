@@ -35,7 +35,7 @@ st.markdown("""
     <div class="watermark">mdfaheem</div>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ Inconel 718: RPM-Dynamic AI Command")
+st.title("🛡️ Inconel 718: Dynamic AI Command")
 st.caption("Accounting for Workpiece Diameter & Spindle Frequency | Developed by mdfaheem")
 
 # --- 3. INPUT SIDEBAR ---
@@ -73,7 +73,7 @@ with col_temp:
     fig_temp = go.Figure(go.Indicator(
         mode = "gauge+number", value = prediction,
         number = {'valueformat': ".4f"},
-        title = {'text': "RPM-ADJUSTED TEMP (°C)", 'font': {'color': '#ff9900'}},
+        title = {'text': "AI PREDICTED TEMP (°C)", 'font': {'color': '#ff9900'}},
         gauge = {'axis': {'range': [0, 1300]}, 'bar': {'color': "#ff9900"}}
     ))
     st.plotly_chart(fig_temp, use_container_width=True)
