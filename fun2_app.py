@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 
-# --- 1. RESEARCH DATA ---
+# --- 1. RESEARCH DATA CORE ---
 dry_data = {
     'Speed': [60, 75, 90, 80, 100, 60, 75, 60, 30, 40, 50, 60, 80, 100, 30, 45, 60, 75, 100, 50, 50, 50, 75, 75, 75, 100, 100, 40, 55, 70, 85, 100, 60, 60, 60, 90, 90, 90, 60, 75, 90, 80, 100, 60, 75, 60, 75, 90, 50, 70, 90, 60, 80, 100, 200, 300],
     'Feed': [0.1, 0.1, 0.1, 0.12, 0.12, 0.1, 0.1, 0.15, 0.05, 0.05, 0.08, 0.08, 0.1, 0.15, 0.1, 0.1, 0.1, 0.1, 0.1, 0.06, 0.08, 0.1, 0.06, 0.08, 0.1, 0.06, 0.08, 0.12, 0.12, 0.12, 0.12, 0.12, 0.05, 0.1, 0.15, 0.05, 0.1, 0.15, 0.1, 0.1, 0.1, 0.12, 0.12, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.15, 0.15, 0.12, 0.12],
@@ -16,13 +16,11 @@ dry_data = {
 df_ml = pd.DataFrame(dry_data)
 X, y = df_ml[['Speed', 'Feed', 'DOC']], df_ml['Temp']
 
-# --- 2. MODEL & ERROR CALCULATION ---
+# --- 2. AI MODEL & GLOBAL ERROR ---
 rf_model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
 y_pred_all = rf_model.predict(X)
-
-# Calculate Errors
-mape = mean_absolute_percentage_error(y, y_pred_all) * 100 # Error Percentage
-mae = mean_absolute_error(y, y_pred_all) # Degree Error
+mape = mean_absolute_percentage_error(y, y_pred_all) * 100
+mae = mean_absolute_error(y, y_pred_all)
 accuracy_pct = 100 - mape
 
 # --- 3. UI SETUP ---
@@ -31,34 +29,50 @@ st.set_page_config(page_title="Inconel Research | Mohammed Faheem M S", layout="
 st.markdown("""
     <style>
     .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #0e1117; color: white; text-align: center; padding: 10px; font-size: 14px; border-top: 1px solid #333; z-index: 100; }
-    .metric-box { background-color: #161b22; border-radius: 10px; padding: 20px; border: 1px solid #30363d; }
     </style>
     """, unsafe_allow_html=True)
 
+# --- 4. BRANDING ---
 st.title("🛡️ Inconel 718: Thermal Precision Center")
 st.markdown("Developed by **Mohammed Faheem M S**")
 st.divider()
 
-# --- 4. ERROR METRICS SECTION ---
-st.subheader("📉 Prediction Error Analysis")
-c1, c2, c3 = st.columns(3)
+# --- 5. SIDEBAR CONTROLS ---
+st.sidebar.header("⚙️ Machine Parameters")
+dia = st.sidebar.number_input("Workpiece Diameter (mm)", value=25.0, format="%.10f")
+in_speed = st.sidebar.number_input("Speed Vc (m/min)", value=60.0, format="%.10f")
+in_feed = st.sidebar.number_input("Feed f (mm/rev)", value=0.1, format="%.10f")
+in_doc = st.sidebar.number_input("DOC ap (mm)", value=0.5, format="%.10f")
 
-with c1:
-    st.metric("Error Percentage (MAPE)", f"{mape:.2f}%", delta=f"-{mape:.2f}%", delta_color="inverse")
-    st.caption("Lower is better. Represents average deviation from actual values.")
+# Real-time Prediction
+calc_rpm = (1000 * in_speed) / (math.pi * dia)
+live_pred = rf_model.predict([[in_speed, in_feed, in_doc]])[0]
 
-with c2:
-    st.metric("Model Accuracy", f"{accuracy_pct:.2f}%")
-    st.caption("Overall reliability of the AI model.")
+# --- 6. INSTRUMENTATION (GAUGES) ---
+col1, col2 = st.columns(2)
+with col1:
+    fig_rpm = go.Figure(go.Indicator(mode="gauge+number", value=calc_rpm, 
+        number={'valueformat': "f", 'font': {'size': 32}}, title={'text': "SPINDLE RPM", 'font': {'color': 'cyan'}},
+        gauge={'axis': {'range': [0, 4000]}, 'bar': {'color': "cyan"}}))
+    st.plotly_chart(fig_rpm, use_container_width=True)
 
-with c3:
-    st.metric("Mean Absolute Error", f"{mae:.2f} °C")
-    st.caption("Average error in degrees Celsius.")
+with col2:
+    fig_temp = go.Figure(go.Indicator(mode="gauge+number", value=live_pred, 
+        number={'valueformat': "f", 'font': {'size': 32}}, title={'text': "PREDICTED TEMP (°C)", 'font': {'color': '#ff9900'}},
+        gauge={'axis': {'range': [0, 1300]}, 'bar': {'color': "#ff9900"}}))
+    st.plotly_chart(fig_temp, use_container_width=True)
+
+# --- 7. ACCURACY METRICS ---
+st.subheader("📊 Research & Error Metrics")
+m1, m2, m3 = st.columns(3)
+m1.metric("Model Accuracy", f"{accuracy_pct:.2f}%")
+m2.metric("Error Percentage (MAPE)", f"{mape:.2f}%")
+m3.metric("Avg Error (MAE)", f"{mae:.2f} °C")
 
 st.divider()
 
-# --- 5. DATA TABLE (Actual vs Predicted) ---
-st.subheader("📋 Experimental Validation Table")
+# --- 8. EXPERIMENTAL VALIDATION TABLE ---
+st.subheader("📋 Actual vs. Predicted Results")
 comparison_df = pd.DataFrame({
     "Actual Temp (°C)": y,
     "AI Predicted Temp (°C)": y_pred_all,
@@ -67,5 +81,5 @@ comparison_df = pd.DataFrame({
 })
 st.dataframe(comparison_df.style.format("{:.4f}"), use_container_width=True)
 
-# --- FOOTER ---
-st.markdown(f'<div class="footer">Developed by <b>Mohammed Faheem M S</b></div>', unsafe_allow_html=True)
+# --- 9. FOOTER ---
+st.markdown(f'<div class="footer">Developed by <b>Mohammed Faheem M S</b> | 2026 Research</div>', unsafe_allow_html=True)
