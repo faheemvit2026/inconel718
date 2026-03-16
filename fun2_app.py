@@ -31,7 +31,7 @@ st.set_page_config(page_title="Inconel 718 AI Temperature Prediction", layout="w
 st.markdown("""<style>.stMetric { background-color: #161b22; border: 1px solid #30363d; padding: 15px; border-radius: 8px; }</style>""", unsafe_allow_html=True)
 
 st.title("🛡️ Inconel 718: Thermal Precision Interface")
-st.markdown("Developed by **Mohammed Faheem M S** | 4-Decimal Precision Mode")
+st.markdown("Developed by **Mohammed Faheem M S** ")
 st.divider()
 
 # --- 4. SIDEBAR ---
