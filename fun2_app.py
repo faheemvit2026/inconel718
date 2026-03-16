@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
 import math
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
@@ -23,46 +22,60 @@ rf_model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
 lr_model = LinearRegression().fit(X, y)
 
 # --- 2. LAYOUT ---
-st.set_page_config(page_title="Inconel AI Model Lab", layout="wide")
-st.title("🛡️ Inconel 718: Model Variance Visualization")
+st.set_page_config(page_title="Inconel AI Precision Hub", layout="wide")
+st.markdown('<div style="position:fixed;bottom:10px;right:15px;color:rgba(150,150,150,0.3);font-weight:bold;">mdfaheem</div>', unsafe_allow_html=True)
+
+st.title("🛡️ Inconel 718: Thermal Precision Center")
 
 # --- 3. INPUT SIDEBAR ---
-st.sidebar.header("🕹️ Parameters")
+st.sidebar.header("🕹️ Controls")
 dia = st.sidebar.number_input("Diameter (mm)", value=25.0, format="%.4f")
 in_speed = st.sidebar.number_input("Speed Vc (m/min)", value=60.0, format="%.4f")
 in_feed = st.sidebar.number_input("Feed f (mm/rev)", value=0.1, format="%.4f")
 in_doc = st.sidebar.number_input("DOC ap (mm)", value=0.5, format="%.4f")
 
-# --- 4. CALCULATIONS ---
-current_input = [[in_speed, in_feed, in_doc]]
-rf_pred = rf_model.predict(current_input)[0]
-lr_pred = lr_model.predict(current_input)[0]
-var_pct = (abs(rf_pred - lr_pred) / rf_pred) * 100
+# Calculations
+calc_rpm = (1000 * in_speed) / (math.pi * dia)
+rf_pred = rf_model.predict([[in_speed, in_feed, in_doc]])[0]
+lr_pred = lr_model.predict([[in_speed, in_feed, in_doc]])[0]
+variance = (abs(rf_pred - lr_pred) / rf_pred) * 100
 
-# Metrics
-m1, m2, m3 = st.columns(3)
-m1.metric("AI Prediction", f"{rf_pred:.2f} °C")
-m2.metric("Linear Baseline", f"{lr_pred:.2f} °C")
-m3.metric("Variance", f"{var_pct:.2f} %")
+# --- 4. THE ANALOGUE GAUGES (RESTORED) ---
+col_rpm, col_temp = st.columns(2)
 
-# --- 5. VARIANCE PLOT ---
-st.subheader("📊 Comparative Accuracy Analysis")
+with col_rpm:
+    fig_rpm = go.Figure(go.Indicator(
+        mode = "gauge+number", value = calc_rpm,
+        title = {'text': "SPINDLE RPM", 'font': {'color': 'cyan'}},
+        gauge = {'axis': {'range': [0, 4000]}, 'bar': {'color': "cyan"}}
+    ))
+    st.plotly_chart(fig_rpm, use_container_width=True)
 
-# Generate Plot
-fig, ax = plt.subplots(figsize=(10, 4))
-y_sorted = np.sort(y)
+with col_temp:
+    fig_temp = go.Figure(go.Indicator(
+        mode = "gauge+number", value = rf_pred,
+        title = {'text': "AI TEMPERATURE (°C)", 'font': {'color': '#ff9900'}},
+        gauge = {'axis': {'range': [0, 1300]}, 'bar': {'color': "#ff9900"}}
+    ))
+    st.plotly_chart(fig_temp, use_container_width=True)
+
+# --- 5. INTERACTIVE VARIANCE GRAPH (PLOTLY) ---
+st.divider()
+st.subheader("📊 Model Variance Comparison (12.94% Gap Analysis)")
+
 y_rf_all = rf_model.predict(X)
 y_lr_all = lr_model.predict(X)
 sorted_idx = np.argsort(y)
 
-ax.scatter(range(len(y)), y_sorted, color='gray', alpha=0.5, label='Actual Trials')
-ax.plot(range(len(y)), y_rf_all[sorted_idx], color='#ff9900', label='AI (RF)', linewidth=2)
-ax.plot(range(len(y)), y_lr_all[sorted_idx], color='cyan', linestyle='--', label='Linear Trend')
-ax.set_ylabel("Temperature (°C)")
-ax.set_xlabel("Experimental Trials (Sorted)")
-ax.legend()
-ax.grid(True, alpha=0.2)
+fig_var = go.Figure()
+# Actual Data
+fig_var.add_trace(go.Scatter(y=np.sort(y), mode='markers', name='Actual Experiments', marker=dict(color='gray', opacity=0.5)))
+# AI Line
+fig_var.add_trace(go.Scatter(y=y_rf_all[sorted_idx], mode='lines', name='AI Prediction (RF)', line=dict(color='#ff9900', width=3)))
+# Linear Line
+fig_var.add_trace(go.Scatter(y=y_lr_all[sorted_idx], mode='lines', name='Linear Baseline', line=dict(color='cyan', dash='dash')))
 
-st.pyplot(fig)
+fig_var.update_layout(height=400, margin=dict(l=0,r=0,t=0,b=0), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+st.plotly_chart(fig_var, use_container_width=True)
 
-st.info("💡 The gap between the dashed cyan line and the orange line represents the 12.94% non-linearity you discovered.")
+st.info(f"💡 Current Model Variance: **{variance:.2f}%**. This confirms the complex, non-linear thermal behavior of Inconel 718.")
