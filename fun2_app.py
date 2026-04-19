@@ -7,7 +7,7 @@ from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
 
-# --- 1. DATASET & MODEL ENGINE ---
+# --- 1. RESEARCH DATA ENGINE ---
 @st.cache_data
 def get_final_dataset():
     data = []
@@ -30,119 +30,128 @@ X['Tool_Enc'] = full_df['Tool'].map({'Diamond Coated': 1, 'Tungsten Carbide': 0}
 y = full_df[['Temp', 'Force', 'Wear']]
 model = MultiOutputRegressor(ExtraTreesRegressor(n_estimators=300, random_state=42)).fit(X, y)
 
-# --- 2. CALCULATE METRICS ---
+# --- 2. CALCULATE VALIDATION METRICS ---
 y_pred = model.predict(X)
 mape_val = mean_absolute_percentage_error(y, y_pred)
 r2_val = r2_score(y, y_pred)
 overall_accuracy = (1 - mape_val) * 100
 overall_efficiency = (r2_val * 0.7) + ((1 - mape_val) * 0.3)
 
-# --- 3. UI CONFIGURATION & CSS INJECTION ---
-st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
+# --- 3. UI CONFIGURATION & CLICKABLE TABS FIX ---
+st.set_page_config(page_title="Inconel 718 AI Predictor", layout="wide")
 
-# This CSS fix removes the white gap and makes the header perfectly sticky
 st.markdown("""
     <style>
-    /* Hides the default Streamlit header */
-    header[data-testid="stHeader"] { 
-        visibility: hidden;
-        height: 0px;
-    }
+    /* Hiding the default Streamlit top bar */
+    header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
     
-    /* Pushes main content down correctly without creating a white box */
-    .stApp .main .block-container { 
-        padding-top: 140px !important; 
+    /* Sticky Header that doesn't block clicks */
+    .header-container {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: white;
+        padding-bottom: 15px;
+        margin-top: -50px;
     }
 
-    /* Professional Sticky Header */
-    .fixed-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
+    .name-banner {
         background-color: #002D62;
-        padding: 25px 0px;
-        z-index: 999;
-        border-bottom: 5px solid #FFD700;
+        padding: 25px;
+        border-radius: 12px;
+        border-bottom: 6px solid #FFD700;
         text-align: center;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Tab styling to make them pop and be easy to click */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 5px;
+        gap: 20px;
     }
     </style>
     
-    <div class="fixed-header">
-        <h1 style="color: white; margin: 0; font-size: 45px; font-weight: 900; letter-spacing: 2px;">MOHAMMED FAHEEM</h1>
-        <p style="color: #FFD700; font-size: 1.2rem; margin: 5px 0 0 0; font-weight: 600;">
-            B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
-        </p>
+    <div class="header-container">
+        <div class="name-banner">
+            <h1 style="color: white; margin: 0; font-size: 48px; font-weight: 900; letter-spacing: 2px;">MOHAMMED FAHEEM</h1>
+            <p style="color: #FFD700; font-size: 1.2rem; margin: 8px 0 0 0; font-weight: 600;">
+                B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
+            </p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
 # --- 4. NAVIGATION TABS ---
-tab1, tab2, tab3 = st.tabs(["🚀 Simulator", "📊 Analytics & Validation", "📑 Database Log"])
+tab1, tab2, tab3 = st.tabs(["🚀 Process Simulator", "📊 Analytics & Validation", "📑 Database Log"])
 
 with tab1:
     c_in, c_out = st.columns([1, 2.3])
     with c_in:
         st.subheader("Process Controls")
-        tool = st.radio("Tool Insert Type", ["Diamond Coated", "Tungsten Carbide"])
-        dia_v = st.number_input("Workpiece Dia (mm)", value=25.0000, format="%.4f")
-        vc_v = st.number_input("Cutting Speed Vc (m/min)", value=100.0000, format="%.4f")
-        fr_v = st.number_input("Feed Rate f (mm/rev)", value=0.1000, format="%.4f")
-        ap_v = st.number_input("Depth of Cut ap (mm)", value=0.5000, format="%.4f")
+        tool = st.radio("Tool Insert Grade", ["Diamond Coated", "Tungsten Carbide"])
+        dia_v = st.number_input("Workpiece Dia (mm)", value=25.0, format="%.4f")
+        vc_v = st.number_input("Cutting Speed Vc (m/min)", value=100.0, format="%.4f")
+        fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1, format="%.4f")
+        ap_v = st.number_input("Depth of Cut ap (mm)", value=0.5, format="%.4f")
         
         rpm = (vc_v * 1000) / (math.pi * dia_v)
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, (1 if tool=="Diamond Coated" else 0)]])[0]
 
     with c_out:
-        # ERROR AND DANGER ALERTS
-        st.subheader("⚠️ Safety Monitor")
+        # ALERTS SECTION
+        st.subheader("⚠️ Machine Health Monitor")
         if p[0] > 1100:
-            st.error(f"🛑 **CRITICAL TEMP:** {p[0]:.4f} °C - Danger of melting!")
+            st.error(f"🛑 **DANGER:** Interface Temperature ({p[0]:.4f} °C) is CRITICAL!")
         elif p[0] > 900:
-            st.warning(f"⚠️ **THERMAL ALERT:** {p[0]:.4f} °C - Monitor wear.")
+            st.warning(f"⚠️ **ALERT:** High Thermal Zone ({p[0]:.4f} °C).")
         
         if p[1] > 1850:
-            st.error(f"🚨 **FORCE OVERLOAD:** {p[1]:.4f} N - Tool failure likely.")
+            st.error(f"🚨 **OVERLOAD:** Mechanical Force ({p[1]:.4f} N) critical!")
         else:
-            st.success(f"✅ **NOMINAL STATE.** Accuracy: {overall_accuracy:.2f}%")
+            st.success(f"✅ **NOMINAL OPERATION.** System Confidence: {overall_accuracy:.2f}%")
 
         m1, m2, m3 = st.columns(3)
-        m1.metric("Spindle RPM", f"{rpm:.4f}")
-        m2.metric("Temp (°C)", f"{p[0]:.4f}")
-        m3.metric("Force (N)", f"{p[1]:.4f}")
+        m1.metric("Spindle RPM", f"{rpm:.2f}")
+        m2.metric("Predicted Temp", f"{p[0]:.2f} °C")
+        m3.metric("Cutting Force", f"{p[1]:.2f} N")
         
-        # INTERACTIVE ANIMATED SPEEDOMETERS
+        # --- CLASSIC SPEEDOMETER GAUGES WITH TRANSITION ---
         g1, g2 = st.columns(2)
         
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
-            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#D35400"},
-                   'steps': [{'range': [900, 1500], 'color': "rgba(200,0,0,0.1)"}]}))
-        fig_t.update_layout(title="Thermal Analysis", height=400, transition={'duration': 1000, 'easing': 'elastic'})
+            title={'text': "Thermal Load (°C)", 'font': {'size': 20}},
+            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "darkred"},
+                   'steps': [{'range': [900, 1100], 'color': "orange"}, {'range': [1100, 1500], 'color': "red"}]}))
+        fig_t.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
         g1.plotly_chart(fig_t, use_container_width=True)
 
         fig_f = go.Figure(go.Indicator(
             mode="gauge+number", value=p[1],
-            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "#2E86C1"},
-                   'steps': [{'range': [1850, 2500], 'color': "rgba(0,0,200,0.1)"}]}))
-        fig_f.update_layout(title="Force Analysis", height=400, transition={'duration': 1000, 'easing': 'elastic'})
+            title={'text': "Cutting Force (N)", 'font': {'size': 20}},
+            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "darkblue"},
+                   'steps': [{'range': [1850, 2500], 'color': "blue"}]}))
+        fig_f.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
         g2.plotly_chart(fig_f, use_container_width=True)
 
 with tab2:
     st.markdown("### 📊 Analytics & Statistical Validation")
-    # SEPARATED PERCENTAGE METRICS
+    # THE PERCENTAGE METRICS ARE NOW HERE
     with st.container(border=True):
-        v1, v2, v3, v4 = st.columns(4)
-        v1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
-        v2.metric("System Efficiency", f"{overall_efficiency*100:.2f} %")
-        v3.metric("MAPE (Error)", f"{mape_val:.8f}")
-        v4.metric("R² Score", f"{r2_val:.8f}")
-
-    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Experimental vs Predicted Correlation"))
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
+        col2.metric("System Efficiency", f"{overall_efficiency*100:.2f} %")
+        col3.metric("MAPE (Error)", f"{mape_val:.8f}")
+        col4.metric("R² Confidence", f"{r2_val:.8f}")
+    
+    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Actual vs Predicted Temp Correlation"))
 
 with tab3:
-    st.subheader("Training Data Log")
+    st.subheader("Training Database Log")
     st.dataframe(full_df, use_container_width=True)
 
 # FOOTER
-st.markdown("<br><br><div style='text-align: center; color: gray; border-top: 1px solid #eee; padding: 20px;'>Created and Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026 All Rights Reserved</div>", unsafe_allow_html=True)
+st.markdown("<br><hr><div style='text-align: center; color: #7f8c8d; padding: 10px;'>Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026 All Rights Reserved</div>", unsafe_allow_html=True)
