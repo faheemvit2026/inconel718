@@ -11,7 +11,6 @@ from sklearn.metrics import r2_score, mean_absolute_percentage_error
 @st.cache_data
 def get_final_dataset():
     data = []
-    # Using your experimental data trends for Inconel 718
     for tool in ["Diamond Coated", "Tungsten Carbide"]:
         t_m = 1.0 if tool == "Diamond Coated" else 1.38
         f_m = 1.0 if tool == "Diamond Coated" else 1.28
@@ -38,67 +37,30 @@ r2_val = r2_score(y, y_pred)
 overall_accuracy = (1 - mape_val) * 100
 overall_efficiency = (r2_val * 0.7) + ((1 - mape_val) * 0.3)
 
-# --- 3. UI CONFIGURATION & CUSTOM THEME ---
+# --- 3. UI CONFIGURATION & CUSTOM DARK THEME ---
 st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
 st.markdown(f"""
     <style>
-    /* Global App Background */
-    .stApp {{
-        background-color: #0E1117;
-        color: #E0E0E0;
-    }}
-
-    /* Hide default header */
+    .stApp {{ background-color: #0E1117; color: #E0E0E0; }}
     header[data-testid="stHeader"] {{ visibility: hidden; height: 0px; }}
     
-    /* Identity Banner - Fixed to top */
     .identity-banner {{
         background-color: #1A1C24;
         padding: 30px;
-        border-bottom: 4px solid #FFD700;
+        border-bottom: 5px solid #FFD700;
         text-align: center;
         margin-top: -60px;
         box-shadow: 0px 10px 20px rgba(0,0,0,0.5);
     }}
     
-    .identity-banner h1 {{
-        color: #FFFFFF !important;
-        font-size: 48px !important;
-        font-weight: 800 !important;
-        margin: 0 !important;
-        letter-spacing: 2px;
-    }}
-    
-    .identity-banner p {{
-        color: #FFD700 !important;
-        font-size: 1.2rem !important;
-        margin-top: 5px !important;
-    }}
+    .identity-banner h1 {{ color: #FFFFFF !important; font-size: 48px !important; margin: 0 !important; }}
+    .identity-banner p {{ color: #FFD700 !important; font-size: 1.2rem !important; margin-top: 5px !important; }}
 
-    /* Professional Tab Styling */
-    .stTabs [data-baseweb="tab-list"] {{
-        background-color: #1A1C24;
-        padding: 10px 20px 0px 20px;
-        border-radius: 10px;
-        gap: 10px;
-    }}
-    
-    .stTabs [data-baseweb="tab"] {{
-        height: 50px;
-        background-color: #262730 !important;
-        color: #FFFFFF !important;
-        border-radius: 5px 5px 0px 0px;
-        border: none !important;
-    }}
+    .stTabs [data-baseweb="tab-list"] {{ background-color: #1A1C24; padding: 10px; border-radius: 10px; gap: 10px; }}
+    .stTabs [data-baseweb="tab"] {{ background-color: #262730 !important; color: #FFFFFF !important; border-radius: 5px; }}
+    .stTabs [aria-selected="true"] {{ background-color: #FFD700 !important; color: #0E1117 !important; font-weight: bold !important; }}
 
-    .stTabs [aria-selected="true"] {{
-        background-color: #FFD700 !important;
-        color: #0E1117 !important;
-        font-weight: bold !important;
-    }}
-
-    /* Analytical Cards for Tab 2 */
     .metric-card {{
         background-color: #1A1C24;
         padding: 20px;
@@ -106,7 +68,6 @@ st.markdown(f"""
         border-left: 5px solid #FFD700;
         text-align: center;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-        margin-bottom: 20px;
     }}
     </style>
     
@@ -123,7 +84,7 @@ with tab1:
     c_in, c_out = st.columns([1, 2.3])
     with c_in:
         st.subheader("Process Controls")
-        tool = st.radio("Tool Insert Grade", ["Diamond Coated", "Tungsten Carbide"])
+        tool = st.radio("Tool Grade", ["Diamond Coated", "Tungsten Carbide"])
         dia_v = st.number_input("Workpiece Dia (mm)", value=25.0, format="%.4f")
         vc_v = st.number_input("Speed Vc (m/min)", value=100.0, format="%.4f")
         fr_v = st.number_input("Feed f (mm/rev)", value=0.1, format="%.4f")
@@ -133,19 +94,31 @@ with tab1:
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, (1 if tool=="Diamond Coated" else 0)]])[0]
 
     with c_out:
-        # SAFETY SYSTEM
+        # DUAL NOTIFICATION ALERT SYSTEM
+        st.subheader("🚦 Machine Health Notifications")
+        
+        # Temperature Alert
         if p[0] > 1000:
-            st.error(f"🚨 CRITICAL THERMAL WARNING: {p[0]:.2f} °C")
-        else:
-            st.success(f"✅ SYSTEM NOMINAL | Accuracy: {overall_accuracy:.2f}%")
+            st.error(f"🚨 **THERMAL CRITICAL:** Interface Temperature ({p[0]:.2f} °C) is too high!")
+        elif p[0] > 850:
+            st.warning(f"⚠️ **THERMAL WARNING:** High heat detected ({p[0]:.2f} °C).")
+            
+        # Force Alert (The one added now)
+        if p[1] > 1850:
+            st.error(f"🚨 **FORCE CRITICAL:** Cutting Force ({p[1]:.2f} N) exceeds tool safety limits!")
+        elif p[1] > 1500:
+            st.warning(f"⚠️ **FORCE WARNING:** High mechanical load ({p[1]:.2f} N).")
+        
+        if p[0] <= 850 and p[1] <= 1500:
+            st.success(f"✅ **SYSTEM STABLE:** Parameters within safe operating zone.")
 
         m1, m2, m3 = st.columns(3)
         m1.metric("Calculated RPM", f"{rpm:.2f}")
         m2.metric("Predicted Temp", f"{p[0]:.2f} °C")
         m3.metric("Cutting Force", f"{p[1]:.2f} N")
         
-        # ANIMATED SPEEDOMETERS
         g1, g2 = st.columns(2)
+        # Gauges with transition movement
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
             title={'text': "Thermal Load", 'font': {'color': 'white'}},
@@ -156,33 +129,25 @@ with tab1:
 
         fig_f = go.Figure(go.Indicator(
             mode="gauge+number", value=p[1],
-            title={'text': "Force (N)", 'font': {'color': 'white'}},
+            title={'text': "Cutting Force (N)", 'font': {'color': 'white'}},
             gauge={'axis': {'range': [0, 2500], 'tickcolor': "white"}, 'bar': {'color': "#1C83E1"},
                    'steps': [{'range': [1850, 2500], 'color': "rgba(28, 131, 225, 0.2)"}]}))
         fig_f.update_layout(paper_bgcolor="#0E1117", font={'color': "white"}, height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
         g2.plotly_chart(fig_f, use_container_width=True)
 
 with tab2:
-    st.markdown("### 📈 Model Validation Metrics")
-    
-    # Professional Metric Cards
+    st.markdown("### 📈 Model Validation Hub")
     v1, v2, v3, v4 = st.columns(4)
-    with v1:
-        st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">Accuracy</h4><h2 style="color:white">{overall_accuracy:.2f}%</h2></div>', unsafe_allow_html=True)
-    with v2:
-        st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">System Efficiency</h4><h2 style="color:white">{overall_efficiency*100:.2f}%</h2></div>', unsafe_allow_html=True)
-    with v3:
-        st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">MAPE</h4><h2 style="color:white">{mape_val:.6f}</h2></div>', unsafe_allow_html=True)
-    with v4:
-        st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">R² Score</h4><h2 style="color:white">{r2_val:.6f}</h2></div>', unsafe_allow_html=True)
+    with v1: st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">Accuracy</h4><h2 style="color:white">{overall_accuracy:.2f}%</h2></div>', unsafe_allow_html=True)
+    with v2: st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">Efficiency</h4><h2 style="color:white">{overall_efficiency*100:.2f}%</h2></div>', unsafe_allow_html=True)
+    with v3: st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">MAPE</h4><h2 style="color:white">{mape_val:.6f}</h2></div>', unsafe_allow_html=True)
+    with v4: st.markdown(f'<div class="metric-card"><h4 style="color:#FFD700">R² Score</h4><h2 style="color:white">{r2_val:.6f}</h2></div>', unsafe_allow_html=True)
     
-    # Correlation Plot
     fig_p = go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:,0], mode='markers', marker=dict(color='#FFD700')))
-    fig_p.update_layout(title="Prediction Stability", paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font={'color': 'white'})
+    fig_p.update_layout(title="Experimental Correlation", paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font={'color': 'white'})
     st.plotly_chart(fig_p, use_container_width=True)
 
 with tab3:
     st.dataframe(full_df, use_container_width=True)
 
-# FOOTER
 st.markdown("<br><hr><center>Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026</center>", unsafe_allow_html=True)
