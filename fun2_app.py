@@ -37,78 +37,85 @@ r2_val = r2_score(y, y_pred)
 overall_accuracy = (1 - mape_val) * 100
 overall_efficiency = (r2_val * 0.7) + ((1 - mape_val) * 0.3)
 
-# --- 3. UI CONFIGURATION & THEMED CSS ---
+# --- 3. UI CONFIGURATION & INDUSTRIAL THEMING ---
 st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
 st.markdown("""
     <style>
-    /* Global Background Fix */
+    /* 1. Global Background (Greyish-Blue Industrial look) */
     .stApp {
-        background-color: #f8f9fa;
+        background-color: #f0f2f6;
     }
 
-    /* Hide default header */
+    /* 2. Hide default Streamlit header */
     header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
     
-    /* Main Name Banner - Forced High Visibility */
-    .name-banner {
+    /* 3. The Professional Identity Banner */
+    .identity-banner {
         background-color: #002D62;
-        padding: 35px;
-        border-radius: 15px;
-        border-bottom: 6px solid #FFD700;
+        padding: 40px;
+        border-radius: 0px 0px 20px 20px;
+        border-bottom: 8px solid #FFD700;
         text-align: center;
-        margin-bottom: 25px;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0px 10px 25px rgba(0,0,0,0.3);
+        margin-top: -60px; /* Pulls up to the very top */
     }
     
-    .name-banner h1 {
+    .identity-banner h1 {
         color: #FFFFFF !important;
-        font-size: 50px !important;
+        font-size: 55px !important;
         font-weight: 900 !important;
         margin: 0 !important;
+        letter-spacing: 3px;
     }
     
-    .name-banner p {
+    .identity-banner p {
         color: #FFD700 !important;
-        font-size: 1.3rem !important;
+        font-size: 1.4rem !important;
         font-weight: 600 !important;
         margin-top: 10px !important;
     }
 
-    /* Tab Alignment & Styling - Removes White Boxes */
+    /* 4. Tab Styling - Integrating into the dark theme */
     .stTabs [data-baseweb="tab-list"] {
         background-color: #002D62;
-        padding: 10px 20px 0px 20px;
-        border-radius: 10px 10px 0px 0px;
-        gap: 15px;
+        padding: 15px 30px 0px 30px;
+        border-radius: 15px 15px 0px 0px;
+        gap: 20px;
+        margin-top: 20px;
     }
     
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
+        height: 55px;
         background-color: #1E3A5F !important;
         color: #FFFFFF !important;
-        border-radius: 8px 8px 0px 0px;
+        border-radius: 10px 10px 0px 0px;
         border: none !important;
+        font-size: 1.1rem;
     }
 
     .stTabs [aria-selected="true"] {
         background-color: #FFD700 !important;
         color: #002D62 !important;
-        font-weight: bold !important;
+        font-weight: 800 !important;
     }
 
-    /* Matching Containers for Stats */
-    .metric-container {
+    /* 5. Validation Metric Cards (The Percentage Stuffs) */
+    .metric-card {
         background-color: #002D62;
-        padding: 20px;
+        padding: 25px;
         border-radius: 15px;
-        border-left: 5px solid #FFD700;
-        margin-bottom: 20px;
-        color: white;
+        border-top: 5px solid #FFD700;
+        color: white !important;
+        text-align: center;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
     }
+    
+    .metric-card h3 { color: #FFD700 !important; margin-bottom: 5px; }
+    .metric-card p { font-size: 1.8rem; font-weight: bold; margin: 0; }
     </style>
     
-    <div class="name-banner">
+    <div class="identity-banner">
         <h1>MOHAMMED FAHEEM</h1>
         <p>B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore</p>
     </div>
@@ -120,69 +127,70 @@ tab1, tab2, tab3 = st.tabs(["🚀 Process Simulator", "📊 Analytics & Validati
 with tab1:
     c_in, c_out = st.columns([1, 2.3])
     with c_in:
-        st.subheader("Process Parameters")
-        tool = st.radio("Tool Grade", ["Diamond Coated", "Tungsten Carbide"])
-        dia_v = st.number_input("Workpiece Dia (mm)", value=25.0, format="%.4f")
-        vc_v = st.number_input("Speed Vc (m/min)", value=100.0, format="%.4f")
-        fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1, format="%.4f")
-        ap_v = st.number_input("Depth of Cut ap (mm)", value=0.5, format="%.4f")
+        st.markdown("### 🔧 Control Unit")
+        with st.container(border=True):
+            tool = st.radio("Tool Insert Grade", ["Diamond Coated", "Tungsten Carbide"])
+            dia_v = st.number_input("Workpiece Dia (mm)", value=25.0, format="%.4f")
+            vc_v = st.number_input("Speed Vc (m/min)", value=100.0, format="%.4f")
+            fr_v = st.number_input("Feed f (mm/rev)", value=0.1, format="%.4f")
+            ap_v = st.number_input("DOC ap (mm)", value=0.5, format="%.4f")
         
-        rpm = (vc_v * 1000) / (math.pi * dia_v)
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, (1 if tool=="Diamond Coated" else 0)]])[0]
+        rpm = (vc_v * 1000) / (math.pi * dia_v)
 
     with c_out:
-        # SAFETY MONITOR
-        st.subheader("⚠️ Safety Monitor")
-        if p[0] > 1100:
-            st.error(f"🛑 **DANGER:** Interface Temp ({p[0]:.4f} °C) is CRITICAL!")
-        elif p[0] > 900:
-            st.warning(f"⚠️ **ALERT:** High Thermal Zone ({p[0]:.4f} °C).")
-        
-        if p[1] > 1850:
-            st.error(f"🚨 **OVERLOAD:** Mechanical Force ({p[1]:.4f} N) critical!")
+        # ALERTS
+        st.markdown("### 🚦 System Response")
+        if p[0] > 1000:
+            st.error(f"🛑 CRITICAL THERMAL OVERLOAD: {p[0]:.2f} °C")
         else:
-            st.success(f"✅ **NOMINAL STATE.** Accuracy: {overall_accuracy:.2f}%")
+            st.success(f"✅ STABLE MACHINING PARAMETERS | AI Accuracy: {overall_accuracy:.2f}%")
 
         m1, m2, m3 = st.columns(3)
-        m1.metric("Spindle RPM", f"{rpm:.2f}")
-        m2.metric("Temp (°C)", f"{p[0]:.2f}")
-        m3.metric("Force (N)", f"{p[1]:.2f}")
+        m1.metric("Calculated RPM", f"{rpm:.2f}")
+        m2.metric("Interface Temp", f"{p[0]:.2f} °C")
+        m3.metric("Cutting Force", f"{p[1]:.2f} N")
         
-        # INTERACTIVE SPEEDOMETERS (Classic Style with Transition)
+        # SPEEDOMETERS WITH SMOOTH TRANSITION
         g1, g2 = st.columns(2)
         
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
-            title={'text': "Thermal Load (°C)", 'font': {'color': "#002D62", 'size': 20}},
-            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "darkred"},
-                   'steps': [{'range': [900, 1100], 'color': "orange"}, {'range': [1100, 1500], 'color': "red"}]}))
-        fig_t.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
+            title={'text': "Thermal Load (°C)", 'font': {'size': 20, 'color': '#002D62'}},
+            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#D35400"},
+                   'steps': [{'range': [0, 900], 'color': "#D6EAF8"}, {'range': [900, 1500], 'color': "#FADBD8"}]}))
+        fig_t.update_layout(height=420, transition={'duration': 1000, 'easing': 'cubic-in-out'})
         g1.plotly_chart(fig_t, use_container_width=True)
 
         fig_f = go.Figure(go.Indicator(
             mode="gauge+number", value=p[1],
-            title={'text': "Cutting Force (N)", 'font': {'color': "#002D62", 'size': 20}},
-            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "darkblue"},
-                   'steps': [{'range': [1850, 2500], 'color': "blue"}]}))
-        fig_f.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
+            title={'text': "Force (N)", 'font': {'size': 20, 'color': '#002D62'}},
+            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "#2E86C1"},
+                   'steps': [{'range': [0, 1850], 'color': "#D6EAF8"}, {'range': [1850, 2500], 'color': "#FADBD8"}]}))
+        fig_f.update_layout(height=420, transition={'duration': 1000, 'easing': 'cubic-in-out'})
         g2.plotly_chart(fig_f, use_container_width=True)
 
 with tab2:
-    st.markdown("### 📊 Analytics & Statistical Validation")
-    # Wrap metrics in the matched box
-    st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
-    col2.metric("System Efficiency", f"{overall_efficiency*100:.2f} %")
-    col3.metric("MAPE (Error)", f"{mape_val:.8f}")
-    col4.metric("R² Confidence", f"{r2_val:.8f}")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("### 📈 Analytics & Validation Hub")
     
-    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Correlation Plot"))
+    # MAPE, R-Squared, and Accuracy are now in high-visibility cards
+    v1, v2, v3, v4 = st.columns(4)
+    
+    with v1:
+        st.markdown(f'<div class="metric-card"><h3>Accuracy</h3><p>{overall_accuracy:.2f} %</p></div>', unsafe_allow_html=True)
+    with v2:
+        st.markdown(f'<div class="metric-card"><h3>Efficiency</h3><p>{overall_efficiency*100:.2f} %</p></div>', unsafe_allow_html=True)
+    with v3:
+        st.markdown(f'<div class="metric-card"><h3>MAPE</h3><p>{mape_val:.6f}</p></div>', unsafe_allow_html=True)
+    with v4:
+        st.markdown(f'<div class="metric-card"><h3>R² Score</h3><p>{r2_val:.6f}</p></div>', unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:,0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Prediction Stability (Experimental vs AI)"))
 
 with tab3:
-    st.subheader("Training Data Log")
+    st.subheader("Experimental Training Data")
     st.dataframe(full_df, use_container_width=True)
 
 # FOOTER
-st.markdown("<br><hr><div style='text-align: center; color: #002D62; font-weight: bold;'>Created and Developed by Mohammed Faheem | VIT Vellore | © 2026</div>", unsafe_allow_html=True)
+st.markdown("<br><hr><center><b>Created by Mohammed Faheem | VIT Vellore | Final Year Thesis © 2026</b></center>", unsafe_allow_html=True)
