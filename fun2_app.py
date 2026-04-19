@@ -7,11 +7,10 @@ from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
 
-# --- 1. RESEARCH-VALIDATED DATABASE (HIGH ACCURACY) ---
+# --- 1. RESEARCH-VALIDATED DATABASE ---
 @st.cache_data
 def get_final_dataset():
     data = []
-    # Physics-based calibration for Inconel 718 Turning
     for tool in ["Diamond Coated", "Tungsten Carbide"]:
         t_m = 1.0 if tool == "Diamond Coated" else 1.38
         f_m = 1.0 if tool == "Diamond Coated" else 1.28
@@ -34,21 +33,39 @@ X = train_df[['Speed', 'Feed', 'DOC', 'Diameter', 'Tool_Enc']]
 y = train_df[['Temp', 'Force', 'Wear']]
 model = MultiOutputRegressor(ExtraTreesRegressor(n_estimators=300, random_state=42)).fit(X, y)
 
-# --- 3. UI LAYOUT ---
+# --- 3. UI LAYOUT & STICKY HEADER CSS ---
 st.set_page_config(page_title="Inconel 718 AI Digital Twin", layout="wide")
 
-# PROFESSIONAL HEADER
+# CSS to make the header stick to the top
 st.markdown("""
-    <div style="border-left: 8px solid #2C3E50; padding: 15px; background-color: #f4f7f6; margin-bottom: 25px;">
-        <h1 style="color: #2C3E50; margin: 0; font-family: sans-serif;">MOHAMMED FAHEEM</h1>
-        <p style="color: #34495E; font-size: 1.1rem; margin: 5px 0;">
-            <b>B.Tech Mechanical Engineering</b> | Specialization in Manufacturing | <b>VIT Vellore</b>
+    <style>
+    .sticky-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: #f8f9fa;
+        z-index: 1000;
+        border-bottom: 4px solid #1E3A5F;
+        padding: 15px 50px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .main-content {
+        padding-top: 140px; /* Space for the sticky header */
+    }
+    </style>
+    
+    <div class="sticky-header">
+        <h1 style="color: #1E3A5F; margin: 0; font-family: sans-serif; font-weight: 800;">MOHAMMED FAHEEM</h1>
+        <p style="color: #2c3e50; font-size: 1.1rem; margin: 2px 0;">
+            <b>B.Tech Mechanical Engineering</b> | Manufacturing Specialization | <b>VIT Vellore</b>
         </p>
-        <p style="color: #7F8C8D; font-size: 0.9rem; margin: 0;">Final Year Project: Intelligent Machining Analysis of Inconel 718</p>
+        <p style="color: #7f8c8d; font-size: 0.85rem; margin: 0;">AI-Powered Machining Analysis of Inconel 718</p>
     </div>
+    <div class="main-content"></div>
     """, unsafe_allow_html=True)
 
-# PRE-CALCULATE ACCURACY FOR DASHBOARD DISPLAY
+# PRE-CALCULATE ACCURACY
 y_pred_all = model.predict(X)
 mape_total = mean_absolute_percentage_error(y, y_pred_all)
 overall_accuracy = (1 - mape_total) * 100
@@ -71,14 +88,14 @@ with tab1:
 
     with c_out:
         # DANGER AND ALERT MONITOR
-        st.subheader("Real-Time Machine Status")
+        st.subheader("Machine Health & Safety")
         if p[0] > 1100:
-            st.error(f"🛑 **DANGER: CRITICAL TEMPERATURE** ({p[0]:.2f}°C). High risk of tool failure and thermal damage.")
+            st.error(f"🛑 **DANGER: CRITICAL TEMPERATURE** ({p[0]:.2f}°C). Plastic deformation risk.")
         elif p[0] > 900:
-            st.warning(f"⚠️ **ALERT: HIGH HEAT LOAD.** Monitor tool flank wear and surface integrity.")
+            st.warning(f"⚠️ **ALERT: HIGH HEAT LOAD.** Monitor flank wear.")
         
         if p[1] > 1850:
-            st.error(f"🚨 **DANGER: FORCE OVERLOAD** ({p[1]:.2f}N). Risk of catastrophic insert breakage.")
+            st.error(f"🚨 **DANGER: FORCE OVERLOAD** ({p[1]:.2f}N). Risk of insert chipping.")
         else:
             st.success(f"✅ **SYSTEM STABLE.** Predicted Work Accuracy: {overall_accuracy:.2f}%")
 
@@ -88,15 +105,14 @@ with tab1:
         m2.metric("Predicted Temp", f"{p[0]:.4f} °C")
         m3.metric("Predicted Force", f"{p[1]:.4f} N")
         
-        # CENTERED LARGE GAUGES
+        # LARGE CENTERED GAUGES
         g1, g2 = st.columns(2)
         
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
             title={'text': "Thermal Load (°C)", 'font': {'size': 20}},
             gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#C0392B"},
-                   'steps': [{'range': [0, 900], 'color': "#D5DBDB"}, 
-                             {'range': [900, 1100], 'color': "#F39C12"}, 
+                   'steps': [{'range': [900, 1100], 'color': "#F39C12"}, 
                              {'range': [1100, 1500], 'color': "#E74C3C"}]}))
         g1.plotly_chart(fig_t.update_layout(height=480), use_container_width=True)
 
@@ -104,26 +120,20 @@ with tab1:
             mode="gauge+number", value=p[1],
             title={'text': "Cutting Force (N)", 'font': {'size': 20}},
             gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "#2980B9"},
-                   'steps': [{'range': [0, 1200], 'color': "#D5DBDB"}, 
-                             {'range': [1200, 1850], 'color': "#AED6F1"}, 
-                             {'range': [1850, 2500], 'color': "#1F618D"}]}))
+                   'steps': [{'range': [1850, 2500], 'color': "#1F618D"}]}))
         g2.plotly_chart(fig_f.update_layout(height=480), use_container_width=True)
 
 with tab2:
-    st.subheader("Model Validation Analytics")
-    r2 = r2_score(y, y_pred_all)
+    st.subheader("Validation Analytics")
+    v1, v2 = st.columns(2)
+    v1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
+    v2.metric("Model R² Score", f"{r2_score(y, y_pred_all):.6f}")
     
-    v1, v2, v3 = st.columns(3)
-    v1.metric("Overall Work Accuracy", f"{overall_accuracy:.2f} %")
-    v2.metric("Model R² Score", f"{r2:.6f}")
-    v3.metric("Mean Error Rate", f"{mape_total*100:.4f} %")
-
-    # Parity Graph
     fig_p = go.Figure()
     fig_p.add_trace(go.Scatter(x=y['Temp'], y=y_pred_all[:, 0], mode='markers', name='Trials'))
     fig_p.add_trace(go.Scatter(x=[300, 1500], y=[300, 1500], mode='lines', line=dict(color='red', dash='dash')))
-    st.plotly_chart(fig_p.update_layout(title="Experimental vs Predicted Correlation", height=500), use_container_width=True)
+    st.plotly_chart(fig_p.update_layout(title="Prediction Stability", height=450), use_container_width=True)
 
 with tab3:
-    st.subheader("Machine Learning Training Dataset")
+    st.subheader("Training Dataset")
     st.dataframe(full_df, use_container_width=True)
