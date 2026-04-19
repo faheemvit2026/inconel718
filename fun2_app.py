@@ -28,37 +28,43 @@ full_df = get_final_dataset()
 train_df = full_df.copy()
 train_df['Tool_Enc'] = train_df['Tool'].map({'Diamond Coated': 1, 'Tungsten Carbide': 0})
 
-# --- 2. AI MODEL TRAINING ---
+# --- 2. AI MODEL ---
 X = train_df[['Speed', 'Feed', 'DOC', 'Diameter', 'Tool_Enc']]
 y = train_df[['Temp', 'Force', 'Wear']]
 model = MultiOutputRegressor(ExtraTreesRegressor(n_estimators=300, random_state=42)).fit(X, y)
 
-# --- 3. UI LAYOUT & PERMANENT STICKY HEADER ---
+# --- 3. UI LAYOUT & STABLE STICKY HEADER ---
 st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
-# CSS for a solid, non-glitchy sticky header
+# CSS to fix the header to the very top of the app view container
 st.markdown("""
     <style>
-    /* Make the top block sticky */
-    [data-testid="stVerticalBlock"] > div:first-child {
-        position: sticky;
+    header[data-testid="stHeader"] {
+        display: none;
+    }
+    .main .block-container {
+        padding-top: 100px;
+    }
+    .sticky-nav {
+        position: fixed;
         top: 0;
-        z-index: 1001;
-        background-color: white;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        border-bottom: 4px solid #1E3A5F;
+        left: 0;
+        right: 0;
+        height: 110px;
+        background-color: #1E3A5F;
+        color: white;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 50px;
+        border-bottom: 3px solid #FFD700;
     }
     </style>
-    <div>
-        <h1 style="color: #1E3A5F; margin: 0; font-family: sans-serif; font-weight: 900;">MOHAMMED FAHEEM</h1>
-        <p style="color: #2C3E50; font-size: 1.1rem; margin: 2px 0;">
-            <b>B.Tech Mechanical Engineering</b> | Specialization in Manufacturing | <b>VIT Vellore</b>
-        </p>
-        <div style="display: flex; justify-content: space-between;">
-            <p style="color: #7F8C8D; font-size: 0.9rem; margin: 0;">Predictive AI Analysis of Inconel 718</p>
-            <p style="color: #1E3A5F; font-size: 1rem; margin: 0;"><b>Overall System Accuracy: 99.98%</b></p>
-        </div>
+    <div class="sticky-nav">
+        <h1 style="margin: 0; font-size: 24px;">MOHAMMED FAHEEM</h1>
+        <p style="margin: 0; font-size: 14px; color: #FFD700;">B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore</p>
+        <p style="margin: 0; font-size: 12px; opacity: 0.8;">AI Predictive Accuracy: 99.98%</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -67,68 +73,52 @@ y_pred_all = model.predict(X)
 mape_total = mean_absolute_percentage_error(y, y_pred_all)
 overall_accuracy = (1 - mape_total) * 100
 
-tab1, tab2, tab3 = st.tabs(["🚀 Real-Time Simulator", "📊 Performance Analytics", "📑 Data Log"])
+tab1, tab2, tab3 = st.tabs(["🚀 Simulator", "📊 Accuracy", "📑 Data"])
 
 with tab1:
     c_in, c_out = st.columns([1, 2.5])
     
     with c_in:
-        st.subheader("Process Controls")
-        tool = st.radio("Tool Insert Grade", ["Diamond Coated", "Tungsten Carbide"])
+        st.subheader("Process Inputs")
+        tool = st.radio("Tool Grade", ["Diamond Coated", "Tungsten Carbide"])
         dia_v = st.number_input("Workpiece Dia (mm)", value=25.0000, format="%.4f")
         vc_v = st.number_input("Cutting Speed Vc (m/min)", value=100.0000, format="%.4f")
-        fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1000, format="%.4f", step=0.01)
-        ap_v = st.number_input("Depth of Cut ap (mm)", value=0.5000, format="%.4f", step=0.1)
+        fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1000, format="%.4f")
+        ap_v = st.number_input("DOC ap (mm)", value=0.5000, format="%.4f")
         
         rpm = (vc_v * 1000) / (math.pi * dia_v)
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, (1 if tool=="Diamond Coated" else 0)]])[0]
 
     with c_out:
-        # --- DANGER & ALERT MONITOR ---
-        st.subheader("⚠️ Safety & Interface Monitor")
-        
+        # ALERTS & METRICS
         if p[0] > 1100:
-            st.error(f"🛑 **DANGER: CRITICAL TEMPERATURE** ({p[0]:.2f}°C). Exceeds safe tool-material interface limits.")
+            st.error(f"🛑 **CRITICAL TEMP:** {p[0]:.2f}°C. Exceeds safe limits.")
         elif p[0] > 900:
-            st.warning(f"⚠️ **HIGH HEAT ALERT:** {p[0]:.2f}°C. Monitor flank wear closely.")
+            st.warning(f"⚠️ **HIGH HEAT ALERT.**")
         
         if p[1] > 1850:
-            st.error(f"🚨 **FORCE OVERLOAD DANGER:** {p[1]:.2f} N. Risk of catastrophic insert chipping.")
+            st.error(f"🚨 **FORCE OVERLOAD:** {p[1]:.2f} N.")
         else:
-            st.success(f"✅ **SYSTEM STABLE.** Predicted Work Accuracy: {overall_accuracy:.2f}%")
+            st.success(f"✅ **SYSTEM STABLE.** Accuracy: {overall_accuracy:.2f}%")
 
-        # METRICS WITH 4-DECIMAL PRECISION
         m1, m2, m3 = st.columns(3)
         m1.metric("Calculated RPM", f"{rpm:.4f}")
         m2.metric("Predicted Temp", f"{p[0]:.4f} °C")
-        m3.metric("Resultant Force", f"{p[1]:.4f} N")
+        m3.metric("Predicted Force", f"{p[1]:.4f} N")
         
-        # LARGE CENTERED GAUGES
+        # LARGE GAUGES
         g1, g2 = st.columns(2)
-        fig_t = go.Figure(go.Indicator(
-            mode="gauge+number", value=p[0],
-            title={'text': "Thermal Load (°C)", 'font': {'size': 20}},
-            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#C0392B"},
-                   'steps': [{'range': [900, 1100], 'color': "#F39C12"}, {'range': [1100, 1500], 'color': "#E74C3C"}]}))
-        g1.plotly_chart(fig_t.update_layout(height=480), use_container_width=True)
+        fig_t = go.Figure(go.Indicator(mode="gauge+number", value=p[0], title={'text': "Temp (°C)"},
+            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "red"}}))
+        g1.plotly_chart(fig_t.update_layout(height=450), use_container_width=True)
 
-        fig_f = go.Figure(go.Indicator(
-            mode="gauge+number", value=p[1],
-            title={'text': "Cutting Force (N)", 'font': {'size': 20}},
-            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "#2980B9"},
-                   'steps': [{'range': [1850, 2500], 'color': "#1F618D"}]}))
-        g2.plotly_chart(fig_f.update_layout(height=480), use_container_width=True)
+        fig_f = go.Figure(go.Indicator(mode="gauge+number", value=p[1], title={'text': "Force (N)"},
+            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "blue"}}))
+        g2.plotly_chart(fig_f.update_layout(height=450), use_container_width=True)
 
 with tab2:
-    st.subheader("Validation Metrics")
-    v1, v2 = st.columns(2)
-    v1.metric("Overall Accuracy", f"{overall_accuracy:.2f}%")
-    v2.metric("R² Score", f"{r2_score(y, y_pred_all):.6f}")
-    
-    fig_p = go.Figure()
-    fig_p.add_trace(go.Scatter(x=y['Temp'], y=y_pred_all[:, 0], mode='markers', name='Trials'))
-    fig_p.add_trace(go.Scatter(x=[300, 1500], y=[300, 1500], mode='lines', line=dict(color='red', dash='dash')))
-    st.plotly_chart(fig_p.update_layout(title="Prediction Stability", height=450), use_container_width=True)
+    st.metric("Overall Accuracy", f"{overall_accuracy:.2f}%")
+    st.metric("R² Score", f"{r2_score(y, y_pred_all):.6f}")
 
 with tab3:
     st.dataframe(full_df, use_container_width=True)
