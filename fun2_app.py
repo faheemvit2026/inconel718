@@ -37,50 +37,56 @@ r2_val = r2_score(y, y_pred)
 overall_accuracy = (1 - mape_val) * 100
 overall_efficiency = (r2_val * 0.7) + ((1 - mape_val) * 0.3)
 
-# --- 3. UI CONFIGURATION & CLICKABLE TABS FIX ---
-st.set_page_config(page_title="Inconel 718 AI Predictor", layout="wide")
+# --- 3. UI CONFIGURATION & CSS ALIGNMENT ---
+st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
 st.markdown("""
     <style>
-    /* Hiding the default Streamlit top bar */
+    /* 1. Hide default header */
     header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
     
-    /* Sticky Header that doesn't block clicks */
-    .header-container {
-        position: -webkit-sticky;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background-color: white;
-        padding-bottom: 15px;
-        margin-top: -50px;
+    /* 2. Main Container Padding - Creates space for the sticky name */
+    .stApp .main .block-container { 
+        padding-top: 20px !important; 
     }
 
+    /* 3. The Professional Name Banner */
     .name-banner {
         background-color: #002D62;
-        padding: 25px;
-        border-radius: 12px;
+        padding: 30px;
+        border-radius: 15px;
         border-bottom: 6px solid #FFD700;
         text-align: center;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+        margin-bottom: 25px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
     }
 
-    /* Tab styling to make them pop and be easy to click */
+    /* 4. Tab Alignment - Removing the 'white bar' look */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 5px;
-        gap: 20px;
+        background-color: transparent;
+        gap: 24px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #f0f2f6;
+        border-radius: 5px 5px 0px 0px;
+        padding: 10px 20px;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #FFD700 !important;
+        color: #002D62 !important;
+        font-weight: bold;
     }
     </style>
     
-    <div class="header-container">
-        <div class="name-banner">
-            <h1 style="color: white; margin: 0; font-size: 48px; font-weight: 900; letter-spacing: 2px;">MOHAMMED FAHEEM</h1>
-            <p style="color: #FFD700; font-size: 1.2rem; margin: 8px 0 0 0; font-weight: 600;">
-                B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
-            </p>
-        </div>
+    <div class="name-banner">
+        <h1 style="color: white; margin: 0; font-size: 50px; font-weight: 900;">MOHAMMED FAHEEM</h1>
+        <p style="color: #FFD700; font-size: 1.3rem; margin: 10px 0 0 0; font-weight: 600;">
+            B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -90,8 +96,8 @@ tab1, tab2, tab3 = st.tabs(["🚀 Process Simulator", "📊 Analytics & Validati
 with tab1:
     c_in, c_out = st.columns([1, 2.3])
     with c_in:
-        st.subheader("Process Controls")
-        tool = st.radio("Tool Insert Grade", ["Diamond Coated", "Tungsten Carbide"])
+        st.subheader("Process Parameters")
+        tool = st.radio("Tool Grade", ["Diamond Coated", "Tungsten Carbide"])
         dia_v = st.number_input("Workpiece Dia (mm)", value=25.0, format="%.4f")
         vc_v = st.number_input("Cutting Speed Vc (m/min)", value=100.0, format="%.4f")
         fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1, format="%.4f")
@@ -101,29 +107,29 @@ with tab1:
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, (1 if tool=="Diamond Coated" else 0)]])[0]
 
     with c_out:
-        # ALERTS SECTION
-        st.subheader("⚠️ Machine Health Monitor")
+        # SAFETY MONITOR
+        st.subheader("⚠️ Safety Monitor")
         if p[0] > 1100:
-            st.error(f"🛑 **DANGER:** Interface Temperature ({p[0]:.4f} °C) is CRITICAL!")
+            st.error(f"🛑 **DANGER:** Interface Temp ({p[0]:.4f} °C) is CRITICAL!")
         elif p[0] > 900:
             st.warning(f"⚠️ **ALERT:** High Thermal Zone ({p[0]:.4f} °C).")
         
         if p[1] > 1850:
             st.error(f"🚨 **OVERLOAD:** Mechanical Force ({p[1]:.4f} N) critical!")
         else:
-            st.success(f"✅ **NOMINAL OPERATION.** System Confidence: {overall_accuracy:.2f}%")
+            st.success(f"✅ **NOMINAL STATE.** Accuracy: {overall_accuracy:.2f}%")
 
         m1, m2, m3 = st.columns(3)
         m1.metric("Spindle RPM", f"{rpm:.2f}")
-        m2.metric("Predicted Temp", f"{p[0]:.2f} °C")
-        m3.metric("Cutting Force", f"{p[1]:.2f} N")
+        m2.metric("Temp (°C)", f"{p[0]:.2f}")
+        m3.metric("Force (N)", f"{p[1]:.2f}")
         
-        # --- CLASSIC SPEEDOMETER GAUGES WITH TRANSITION ---
+        # INTERACTIVE SPEEDOMETERS
         g1, g2 = st.columns(2)
         
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
-            title={'text': "Thermal Load (°C)", 'font': {'size': 20}},
+            title={'text': "Thermal Load (°C)"},
             gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "darkred"},
                    'steps': [{'range': [900, 1100], 'color': "orange"}, {'range': [1100, 1500], 'color': "red"}]}))
         fig_t.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
@@ -131,7 +137,7 @@ with tab1:
 
         fig_f = go.Figure(go.Indicator(
             mode="gauge+number", value=p[1],
-            title={'text': "Cutting Force (N)", 'font': {'size': 20}},
+            title={'text': "Cutting Force (N)"},
             gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "darkblue"},
                    'steps': [{'range': [1850, 2500], 'color': "blue"}]}))
         fig_f.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
@@ -139,7 +145,7 @@ with tab1:
 
 with tab2:
     st.markdown("### 📊 Analytics & Statistical Validation")
-    # THE PERCENTAGE METRICS ARE NOW HERE
+    # MAPE, R-Squared and Percentages are here
     with st.container(border=True):
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
@@ -147,11 +153,11 @@ with tab2:
         col3.metric("MAPE (Error)", f"{mape_val:.8f}")
         col4.metric("R² Confidence", f"{r2_val:.8f}")
     
-    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Actual vs Predicted Temp Correlation"))
+    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Correlation Plot"))
 
 with tab3:
-    st.subheader("Training Database Log")
+    st.subheader("Training Data Log")
     st.dataframe(full_df, use_container_width=True)
 
 # FOOTER
-st.markdown("<br><hr><div style='text-align: center; color: #7f8c8d; padding: 10px;'>Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026 All Rights Reserved</div>", unsafe_allow_html=True)
+st.markdown("<br><hr><div style='text-align: center; color: gray;'>Created and Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026</div>", unsafe_allow_html=True)
