@@ -37,56 +37,80 @@ r2_val = r2_score(y, y_pred)
 overall_accuracy = (1 - mape_val) * 100
 overall_efficiency = (r2_val * 0.7) + ((1 - mape_val) * 0.3)
 
-# --- 3. UI CONFIGURATION & CSS ALIGNMENT ---
+# --- 3. UI CONFIGURATION & THEMED CSS ---
 st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
 st.markdown("""
     <style>
-    /* 1. Hide default header */
-    header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
-    
-    /* 2. Main Container Padding - Creates space for the sticky name */
-    .stApp .main .block-container { 
-        padding-top: 20px !important; 
+    /* Global Background Fix */
+    .stApp {
+        background-color: #f8f9fa;
     }
 
-    /* 3. The Professional Name Banner */
+    /* Hide default header */
+    header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
+    
+    /* Main Name Banner - Forced High Visibility */
     .name-banner {
         background-color: #002D62;
-        padding: 30px;
+        padding: 35px;
         border-radius: 15px;
         border-bottom: 6px solid #FFD700;
         text-align: center;
         margin-bottom: 25px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .name-banner h1 {
+        color: #FFFFFF !important;
+        font-size: 50px !important;
+        font-weight: 900 !important;
+        margin: 0 !important;
+    }
+    
+    .name-banner p {
+        color: #FFD700 !important;
+        font-size: 1.3rem !important;
+        font-weight: 600 !important;
+        margin-top: 10px !important;
     }
 
-    /* 4. Tab Alignment - Removing the 'white bar' look */
+    /* Tab Alignment & Styling - Removes White Boxes */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: transparent;
-        gap: 24px;
+        background-color: #002D62;
+        padding: 10px 20px 0px 20px;
+        border-radius: 10px 10px 0px 0px;
+        gap: 15px;
     }
     
     .stTabs [data-baseweb="tab"] {
         height: 50px;
-        white-space: pre-wrap;
-        background-color: #f0f2f6;
-        border-radius: 5px 5px 0px 0px;
-        padding: 10px 20px;
+        background-color: #1E3A5F !important;
+        color: #FFFFFF !important;
+        border-radius: 8px 8px 0px 0px;
+        border: none !important;
     }
 
     .stTabs [aria-selected="true"] {
         background-color: #FFD700 !important;
         color: #002D62 !important;
-        font-weight: bold;
+        font-weight: bold !important;
+    }
+
+    /* Matching Containers for Stats */
+    .metric-container {
+        background-color: #002D62;
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 5px solid #FFD700;
+        margin-bottom: 20px;
+        color: white;
     }
     </style>
     
     <div class="name-banner">
-        <h1 style="color: white; margin: 0; font-size: 50px; font-weight: 900;">MOHAMMED FAHEEM</h1>
-        <p style="color: #FFD700; font-size: 1.3rem; margin: 10px 0 0 0; font-weight: 600;">
-            B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
-        </p>
+        <h1>MOHAMMED FAHEEM</h1>
+        <p>B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -99,7 +123,7 @@ with tab1:
         st.subheader("Process Parameters")
         tool = st.radio("Tool Grade", ["Diamond Coated", "Tungsten Carbide"])
         dia_v = st.number_input("Workpiece Dia (mm)", value=25.0, format="%.4f")
-        vc_v = st.number_input("Cutting Speed Vc (m/min)", value=100.0, format="%.4f")
+        vc_v = st.number_input("Speed Vc (m/min)", value=100.0, format="%.4f")
         fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1, format="%.4f")
         ap_v = st.number_input("Depth of Cut ap (mm)", value=0.5, format="%.4f")
         
@@ -124,12 +148,12 @@ with tab1:
         m2.metric("Temp (°C)", f"{p[0]:.2f}")
         m3.metric("Force (N)", f"{p[1]:.2f}")
         
-        # INTERACTIVE SPEEDOMETERS
+        # INTERACTIVE SPEEDOMETERS (Classic Style with Transition)
         g1, g2 = st.columns(2)
         
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
-            title={'text': "Thermal Load (°C)"},
+            title={'text': "Thermal Load (°C)", 'font': {'color': "#002D62", 'size': 20}},
             gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "darkred"},
                    'steps': [{'range': [900, 1100], 'color': "orange"}, {'range': [1100, 1500], 'color': "red"}]}))
         fig_t.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
@@ -137,7 +161,7 @@ with tab1:
 
         fig_f = go.Figure(go.Indicator(
             mode="gauge+number", value=p[1],
-            title={'text': "Cutting Force (N)"},
+            title={'text': "Cutting Force (N)", 'font': {'color': "#002D62", 'size': 20}},
             gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "darkblue"},
                    'steps': [{'range': [1850, 2500], 'color': "blue"}]}))
         fig_f.update_layout(height=400, transition={'duration': 1000, 'easing': 'cubic-in-out'})
@@ -145,13 +169,14 @@ with tab1:
 
 with tab2:
     st.markdown("### 📊 Analytics & Statistical Validation")
-    # MAPE, R-Squared and Percentages are here
-    with st.container(border=True):
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
-        col2.metric("System Efficiency", f"{overall_efficiency*100:.2f} %")
-        col3.metric("MAPE (Error)", f"{mape_val:.8f}")
-        col4.metric("R² Confidence", f"{r2_val:.8f}")
+    # Wrap metrics in the matched box
+    st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
+    col2.metric("System Efficiency", f"{overall_efficiency*100:.2f} %")
+    col3.metric("MAPE (Error)", f"{mape_val:.8f}")
+    col4.metric("R² Confidence", f"{r2_val:.8f}")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Correlation Plot"))
 
@@ -160,4 +185,4 @@ with tab3:
     st.dataframe(full_df, use_container_width=True)
 
 # FOOTER
-st.markdown("<br><hr><div style='text-align: center; color: gray;'>Created and Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026</div>", unsafe_allow_html=True)
+st.markdown("<br><hr><div style='text-align: center; color: #002D62; font-weight: bold;'>Created and Developed by Mohammed Faheem | VIT Vellore | © 2026</div>", unsafe_allow_html=True)
