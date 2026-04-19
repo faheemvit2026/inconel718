@@ -7,7 +7,7 @@ from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
 
-# --- 1. DATASET & MODEL ENGINE ---
+# --- 1. RESEARCH DATA ENGINE ---
 @st.cache_data
 def get_final_dataset():
     data = []
@@ -37,112 +37,118 @@ r2_val = r2_score(y, y_pred)
 overall_accuracy = (1 - mape_val) * 100
 overall_efficiency = (r2_val * 0.7) + ((1 - mape_val) * 0.3)
 
-# --- 3. STICKY HEADER & LAYOUT FIX ---
+# --- 3. UI CONFIGURATION ---
 st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
+# CSS to make the header sticky but NOT blocking the tabs
 st.markdown("""
     <style>
-    /* Hide default header */
-    header[data-testid="stHeader"] { visibility: hidden; }
-
-    /* Fix main content overlap - pushing everything down to clear the name */
-    .stApp .main .block-container { 
-        padding-top: 160px !important; 
-    }
-
-    /* Fixed Name Header */
-    .fixed-header {
-        position: fixed;
+    /* Hide the top streamlit padding */
+    header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
+    
+    /* Create a sticky container for the name */
+    .sticky-wrapper {
+        position: -webkit-sticky;
+        position: sticky;
         top: 0;
-        left: 0;
-        width: 100%;
-        background-color: #002D62;
-        padding: 25px 50px;
-        z-index: 9999;
-        border-bottom: 5px solid #FFD700;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
-        text-align: center;
+        z-index: 1000;
+        background-color: white;
+        padding-bottom: 10px;
     }
-
-    /* Adjust Tabs positioning so they stay visible below the name */
-    div[data-testid="stTabs"] {
-        position: relative;
-        z-index: 1;
+    
+    .name-card {
+        background-color: #002D62;
+        padding: 20px;
+        border-radius: 10px;
+        border-bottom: 5px solid #FFD700;
+        text-align: center;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    /* Ensure tabs are clickable and styled */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background-color: #f0f2f6;
+        padding: 10px;
+        border-radius: 10px;
     }
     </style>
     
-    <div class="fixed-header">
-        <h1 style="color: white; margin: 0; font-size: 45px; font-weight: 900; letter-spacing: 2px;">MOHAMMED FAHEEM</h1>
-        <p style="color: #FFD700; font-size: 1.2rem; margin: 5px 0 0 0; font-weight: 600;">
-            B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
-        </p>
+    <div class="sticky-wrapper">
+        <div class="name-card">
+            <h1 style="color: white; margin: 0; font-size: 42px; font-weight: 900;">MOHAMMED FAHEEM</h1>
+            <p style="color: #FFD700; font-size: 1.1rem; margin: 5px 0 0 0; font-weight: 600;">
+                B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
+            </p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 4. TABS ---
+# --- 4. NAVIGATION TABS ---
 tab1, tab2, tab3 = st.tabs(["🚀 Simulator", "📊 Analytics & Validation", "📑 Database Log"])
 
 with tab1:
     c_in, c_out = st.columns([1, 2.3])
     with c_in:
-        st.subheader("Process Controls")
-        tool = st.radio("Tool Grade", ["Diamond Coated", "Tungsten Carbide"])
-        dia_v = st.number_input("Workpiece Dia (mm)", value=25.0000, format="%.4f")
-        vc_v = st.number_input("Cutting Speed Vc (m/min)", value=100.0000, format="%.4f")
-        fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1000, format="%.4f")
-        ap_v = st.number_input("Depth of Cut ap (mm)", value=0.5000, format="%.4f")
+        st.subheader("Process Parameters")
+        tool = st.radio("Insert Grade", ["Diamond Coated", "Tungsten Carbide"])
+        dia_v = st.number_input("Workpiece Dia (mm)", value=25.0, format="%.4f")
+        vc_v = st.number_input("Speed Vc (m/min)", value=100.0, format="%.4f")
+        fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1, format="%.4f")
+        ap_v = st.number_input("DOC ap (mm)", value=0.5, format="%.4f")
         
         rpm = (vc_v * 1000) / (math.pi * dia_v)
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, (1 if tool=="Diamond Coated" else 0)]])[0]
 
     with c_out:
-        # DANGER/ERROR ALERTS
-        st.subheader("⚠️ Safety Monitor")
+        # SAFETY ALERTS
         if p[0] > 1100:
-            st.error(f"🛑 **DANGER:** Interface Temperature ({p[0]:.4f} °C) is CRITICAL!")
+            st.error(f"🛑 **DANGER:** Interface Temp ({p[0]:.4f} °C) exceeds safety threshold!")
         elif p[0] > 900:
             st.warning(f"⚠️ **ALERT:** High Thermal Zone ({p[0]:.4f} °C).")
         
         if p[1] > 1850:
-            st.error(f"🚨 **OVERLOAD:** Force ({p[1]:.4f} N) exceeds safety limits!")
+            st.error(f"🚨 **OVERLOAD:** Mechanical Force ({p[1]:.4f} N) critical!")
         else:
-            st.success(f"✅ **SYSTEM READY.** Accuracy: {overall_accuracy:.2f}%")
+            st.success(f"✅ **STABLE:** AI Confidence: {overall_accuracy:.2f}%")
 
         m1, m2, m3 = st.columns(3)
-        m1.metric("RPM", f"{rpm:.4f}")
-        m2.metric("Temp (°C)", f"{p[0]:.4f}")
-        m3.metric("Force (N)", f"{p[1]:.4f}")
+        m1.metric("Spindle RPM", f"{rpm:.2f}")
+        m2.metric("Predicted Temp", f"{p[0]:.2f} °C")
+        m3.metric("Cutting Force", f"{p[1]:.2f} N")
         
-        # ANIMATED SPEEDOMETERS
+        # --- INTERACTIVE ANIMATED GAUGES ---
         g1, g2 = st.columns(2)
         
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
             gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#D35400"},
-                   'steps': [{'range': [900, 1500], 'color': "#FDEBD0"}]}))
-        fig_t.update_layout(title="Thermal Load", height=400, transition={'duration': 1000, 'easing': 'elastic'})
+                   'steps': [{'range': [1100, 1500], 'color': "rgba(255,0,0,0.1)"}]}))
+        fig_t.update_layout(title="Thermal Analysis", height=380, transition={'duration': 1000, 'easing': 'cubic-in-out'})
         g1.plotly_chart(fig_t, use_container_width=True)
 
         fig_f = go.Figure(go.Indicator(
             mode="gauge+number", value=p[1],
             gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "#2E86C1"},
-                   'steps': [{'range': [1850, 2500], 'color': "#D6EAF8"}]}))
-        fig_f.update_layout(title="Cutting Force", height=400, transition={'duration': 1000, 'easing': 'elastic'})
+                   'steps': [{'range': [1850, 2500], 'color': "rgba(0,0,255,0.1)"}]}))
+        fig_f.update_layout(title="Force Analysis", height=380, transition={'duration': 1000, 'easing': 'cubic-in-out'})
         g2.plotly_chart(fig_f, use_container_width=True)
 
 with tab2:
     st.markdown("### 📊 Analytics & Statistical Validation")
     with st.container(border=True):
-        v1, v2, v3, v4 = st.columns(4)
-        v1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
-        v2.metric("System Efficiency", f"{overall_efficiency*100:.2f} %")
-        v3.metric("MAPE (Error)", f"{mape_val:.8f}")
-        v4.metric("R² Score", f"{r2_val:.8f}")
-
-    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Correlation Plot"))
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Accuracy", f"{overall_accuracy:.2f} %")
+        col2.metric("Efficiency", f"{overall_efficiency*100:.2f} %")
+        col3.metric("MAPE", f"{mape_val:.8f}")
+        col4.metric("R² Score", f"{r2_val:.8f}")
+    
+    # Correlation Chart
+    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Actual vs Predicted Temp"))
 
 with tab3:
+    st.subheader("Training Database")
     st.dataframe(full_df, use_container_width=True)
 
 # FOOTER
-st.markdown("<br><br><div style='text-align: center; color: gray; border-top: 1px solid #eee; padding: 20px;'>Created by <b>Mohammed Faheem</b> | VIT Vellore | © 2026</div>", unsafe_allow_html=True)
+st.markdown("<br><hr><center>Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026</center>", unsafe_allow_html=True)
