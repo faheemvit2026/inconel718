@@ -7,7 +7,7 @@ from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
 
-# --- 1. RESEARCH DATA ARCHIVE ---
+# --- 1. DATA CALIBRATION ---
 @st.cache_data
 def get_final_dataset():
     data = []
@@ -28,25 +28,38 @@ full_df = get_final_dataset()
 train_df = full_df.copy()
 train_df['Tool_Enc'] = train_df['Tool'].map({'Diamond Coated': 1, 'Tungsten Carbide': 0})
 
-# --- 2. TRAIN AI MODEL ---
+# --- 2. AI MODEL TRAINING ---
 X = train_df[['Speed', 'Feed', 'DOC', 'Diameter', 'Tool_Enc']]
 y = train_df[['Temp', 'Force', 'Wear']]
 model = MultiOutputRegressor(ExtraTreesRegressor(n_estimators=300, random_state=42)).fit(X, y)
 
-# --- 3. UI LAYOUT ---
+# --- 3. UI LAYOUT & PERMANENT STICKY HEADER ---
 st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
-# --- PROFESSIONAL HEADER (Integrated & Stable) ---
-with st.container(border=True):
-    st.markdown("""
-        <h1 style="color: #1E3A5F; margin-bottom: 0px; font-family: sans-serif; font-weight: 900;">MOHAMMED FAHEEM</h1>
+# CSS for a solid, non-glitchy sticky header
+st.markdown("""
+    <style>
+    /* Make the top block sticky */
+    [data-testid="stVerticalBlock"] > div:first-child {
+        position: sticky;
+        top: 0;
+        z-index: 1001;
+        background-color: white;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border-bottom: 4px solid #1E3A5F;
+    }
+    </style>
+    <div>
+        <h1 style="color: #1E3A5F; margin: 0; font-family: sans-serif; font-weight: 900;">MOHAMMED FAHEEM</h1>
         <p style="color: #2C3E50; font-size: 1.1rem; margin: 2px 0;">
-            <b>B.Tech Mechanical Engineering</b> | Manufacturing Specialization | <b>VIT Vellore</b>
+            <b>B.Tech Mechanical Engineering</b> | Specialization in Manufacturing | <b>VIT Vellore</b>
         </p>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <p style="color: #7F8C8D; font-size: 0.9rem; margin: 0;">Final Year Project: Predictive AI Analysis of Inconel 718 Machining</p>
+        <div style="display: flex; justify-content: space-between;">
+            <p style="color: #7F8C8D; font-size: 0.9rem; margin: 0;">Predictive AI Analysis of Inconel 718</p>
             <p style="color: #1E3A5F; font-size: 1rem; margin: 0;"><b>Overall System Accuracy: 99.98%</b></p>
         </div>
+    </div>
     """, unsafe_allow_html=True)
 
 # ACCURACY CALCULATION
@@ -71,16 +84,14 @@ with tab1:
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, (1 if tool=="Diamond Coated" else 0)]])[0]
 
     with c_out:
-        # --- DANGER & ALERT SYSTEM ---
-        st.subheader("⚠️ Safety & Interface Status")
+        # --- DANGER & ALERT MONITOR ---
+        st.subheader("⚠️ Safety & Interface Monitor")
         
-        # Temp Alerts
         if p[0] > 1100:
-            st.error(f"🛑 **CRITICAL TEMPERATURE DANGER:** {p[0]:.2f}°C. Exceeds safe tool-material interface limits.")
+            st.error(f"🛑 **DANGER: CRITICAL TEMPERATURE** ({p[0]:.2f}°C). Exceeds safe tool-material interface limits.")
         elif p[0] > 900:
-            st.warning(f"⚠️ **HIGH THERMAL ALERT:** {p[0]:.2f}°C. Monitor flank wear closely.")
+            st.warning(f"⚠️ **HIGH HEAT ALERT:** {p[0]:.2f}°C. Monitor flank wear closely.")
         
-        # Force Alerts
         if p[1] > 1850:
             st.error(f"🚨 **FORCE OVERLOAD DANGER:** {p[1]:.2f} N. Risk of catastrophic insert chipping.")
         else:
@@ -94,13 +105,11 @@ with tab1:
         
         # LARGE CENTERED GAUGES
         g1, g2 = st.columns(2)
-        
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
             title={'text': "Thermal Load (°C)", 'font': {'size': 20}},
             gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#C0392B"},
-                   'steps': [{'range': [900, 1100], 'color': "#F39C12"}, 
-                             {'range': [1100, 1500], 'color': "#E74C3C"}]}))
+                   'steps': [{'range': [900, 1100], 'color': "#F39C12"}, {'range': [1100, 1500], 'color': "#E74C3C"}]}))
         g1.plotly_chart(fig_t.update_layout(height=480), use_container_width=True)
 
         fig_f = go.Figure(go.Indicator(
@@ -111,12 +120,15 @@ with tab1:
         g2.plotly_chart(fig_f.update_layout(height=480), use_container_width=True)
 
 with tab2:
-    st.subheader("Model Validation Metrics")
-    v1, v2, v3 = st.columns(3)
+    st.subheader("Validation Metrics")
+    v1, v2 = st.columns(2)
     v1.metric("Overall Accuracy", f"{overall_accuracy:.2f}%")
     v2.metric("R² Score", f"{r2_score(y, y_pred_all):.6f}")
-    v3.metric("Dataset Size", f"{len(train_df)}")
+    
+    fig_p = go.Figure()
+    fig_p.add_trace(go.Scatter(x=y['Temp'], y=y_pred_all[:, 0], mode='markers', name='Trials'))
+    fig_p.add_trace(go.Scatter(x=[300, 1500], y=[300, 1500], mode='lines', line=dict(color='red', dash='dash')))
+    st.plotly_chart(fig_p.update_layout(title="Prediction Stability", height=450), use_container_width=True)
 
 with tab3:
-    st.subheader("Training Data Log")
     st.dataframe(full_df, use_container_width=True)
