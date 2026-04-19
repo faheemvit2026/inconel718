@@ -37,29 +37,45 @@ r2_val = r2_score(y, y_pred)
 overall_accuracy = (1 - mape_val) * 100
 overall_efficiency = (r2_val * 0.7) + ((1 - mape_val) * 0.3)
 
-# --- 3. STICKY HEADER & CSS ---
+# --- 3. STICKY HEADER & LAYOUT FIX ---
 st.set_page_config(page_title="Inconel 718 AI Twin", layout="wide")
 
 st.markdown("""
     <style>
+    /* Hide default header */
     header[data-testid="stHeader"] { visibility: hidden; }
-    .stApp .main .block-container { padding-top: 140px !important; }
+
+    /* Fix main content overlap - pushing everything down to clear the name */
+    .stApp .main .block-container { 
+        padding-top: 160px !important; 
+    }
+
+    /* Fixed Name Header */
     .fixed-header {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         background-color: #002D62;
-        padding: 20px 50px;
-        z-index: 10000;
+        padding: 25px 50px;
+        z-index: 9999;
         border-bottom: 5px solid #FFD700;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
         text-align: center;
     }
+
+    /* Adjust Tabs positioning so they stay visible below the name */
+    div[data-testid="stTabs"] {
+        position: relative;
+        z-index: 1;
+    }
     </style>
+    
     <div class="fixed-header">
-        <h1 style="color: white; margin: 0; font-size: 40px; font-weight: 900;">MOHAMMED FAHEEM</h1>
-        <p style="color: #FFD700; font-size: 1.1rem; margin: 0;">B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore</p>
+        <h1 style="color: white; margin: 0; font-size: 45px; font-weight: 900; letter-spacing: 2px;">MOHAMMED FAHEEM</h1>
+        <p style="color: #FFD700; font-size: 1.2rem; margin: 5px 0 0 0; font-weight: 600;">
+            B.Tech Mechanical Engineering | Manufacturing Specialization | VIT Vellore
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -70,7 +86,7 @@ with tab1:
     c_in, c_out = st.columns([1, 2.3])
     with c_in:
         st.subheader("Process Controls")
-        tool = st.radio("Tool Insert Grade", ["Diamond Coated", "Tungsten Carbide"])
+        tool = st.radio("Tool Grade", ["Diamond Coated", "Tungsten Carbide"])
         dia_v = st.number_input("Workpiece Dia (mm)", value=25.0000, format="%.4f")
         vc_v = st.number_input("Cutting Speed Vc (m/min)", value=100.0000, format="%.4f")
         fr_v = st.number_input("Feed rate f (mm/rev)", value=0.1000, format="%.4f")
@@ -81,45 +97,41 @@ with tab1:
 
     with c_out:
         # DANGER/ERROR ALERTS
+        st.subheader("⚠️ Safety Monitor")
         if p[0] > 1100:
             st.error(f"🛑 **DANGER:** Interface Temperature ({p[0]:.4f} °C) is CRITICAL!")
         elif p[0] > 900:
-            st.warning(f"⚠️ **ALERT:** High Heat Zone Detected ({p[0]:.4f} °C).")
+            st.warning(f"⚠️ **ALERT:** High Thermal Zone ({p[0]:.4f} °C).")
         
         if p[1] > 1850:
-            st.error(f"🚨 **OVERLOAD:** Mechanical Force ({p[1]:.4f} N) exceeds safety limits!")
+            st.error(f"🚨 **OVERLOAD:** Force ({p[1]:.4f} N) exceeds safety limits!")
         else:
-            st.success(f"✅ **NOMINAL:** Prediction Confidence: {overall_accuracy:.2f}%")
+            st.success(f"✅ **SYSTEM READY.** Accuracy: {overall_accuracy:.2f}%")
 
-        # PRECISION METRICS
         m1, m2, m3 = st.columns(3)
-        m1.metric("Spindle RPM", f"{rpm:.4f}")
-        m2.metric("Predicted Temp", f"{p[0]:.4f}")
-        m3.metric("Cutting Force", f"{p[1]:.4f}")
+        m1.metric("RPM", f"{rpm:.4f}")
+        m2.metric("Temp (°C)", f"{p[0]:.4f}")
+        m3.metric("Force (N)", f"{p[1]:.4f}")
         
-        # ANIMATED INTERACTIVE SPEEDOMETERS
+        # ANIMATED SPEEDOMETERS
         g1, g2 = st.columns(2)
         
-        # Thermal Gauge
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
-            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#C0392B"},
-                   'steps': [{'range': [900, 1100], 'color': "orange"}, {'range': [1100, 1500], 'color': "red"}]}))
-        fig_t.update_layout(title="Interface Temp (°C)", height=450, transition={'duration': 800, 'easing': 'elastic-in-out'})
+            gauge={'axis': {'range': [0, 1500]}, 'bar': {'color': "#D35400"},
+                   'steps': [{'range': [900, 1500], 'color': "#FDEBD0"}]}))
+        fig_t.update_layout(title="Thermal Load", height=400, transition={'duration': 1000, 'easing': 'elastic'})
         g1.plotly_chart(fig_t, use_container_width=True)
 
-        # Force Gauge
         fig_f = go.Figure(go.Indicator(
             mode="gauge+number", value=p[1],
-            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "#2980B9"},
-                   'steps': [{'range': [1850, 2500], 'color': "darkblue"}]}))
-        fig_f.update_layout(title="Cutting Force (N)", height=450, transition={'duration': 800, 'easing': 'elastic-in-out'})
+            gauge={'axis': {'range': [0, 2500]}, 'bar': {'color': "#2E86C1"},
+                   'steps': [{'range': [1850, 2500], 'color': "#D6EAF8"}]}))
+        fig_f.update_layout(title="Cutting Force", height=400, transition={'duration': 1000, 'easing': 'elastic'})
         g2.plotly_chart(fig_f, use_container_width=True)
 
 with tab2:
     st.markdown("### 📊 Analytics & Statistical Validation")
-    
-    # SEPARATED PERCENTAGE METRICS
     with st.container(border=True):
         v1, v2, v3, v4 = st.columns(4)
         v1.metric("Overall Accuracy", f"{overall_accuracy:.2f} %")
@@ -127,15 +139,10 @@ with tab2:
         v3.metric("MAPE (Error)", f"{mape_val:.8f}")
         v4.metric("R² Score", f"{r2_val:.8f}")
 
-    # PARITY PLOT
-    fig_p = go.Figure()
-    fig_p.add_trace(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', name='Data Points', marker=dict(color='#002D62')))
-    fig_p.update_layout(title="Experimental vs Predicted Correlation (Temp)", xaxis_title="Actual", yaxis_title="Predicted")
-    st.plotly_chart(fig_p, use_container_width=True)
+    st.plotly_chart(go.Figure(go.Scatter(x=y['Temp'], y=y_pred[:, 0], mode='markers', marker=dict(color='#002D62'))).update_layout(title="Correlation Plot"))
 
 with tab3:
-    st.subheader("Training Data Log")
     st.dataframe(full_df, use_container_width=True)
 
 # FOOTER
-st.markdown("<br><br><div style='text-align: center; color: gray; border-top: 1px solid #eee; padding: 20px;'>Created and Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026 All Rights Reserved</div>", unsafe_allow_html=True)
+st.markdown("<br><br><div style='text-align: center; color: gray; border-top: 1px solid #eee; padding: 20px;'>Created by <b>Mohammed Faheem</b> | VIT Vellore | © 2026</div>", unsafe_allow_html=True)
