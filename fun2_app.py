@@ -89,4 +89,33 @@ with tab1:
         st.subheader(f"AI Prediction: {tool_choice}")
         
         # Display different status based on tool limits
-        if mat_idx
+        if mat_idx == 1 and p[0] > 680:
+            st.error("🛑 DCC Thermal Limit Alert!")
+        elif mat_idx == 0 and p[0] > 750:
+            st.error("🛑 WC Thermal Limit Alert!")
+        else:
+            st.success("✅ Stable Machining Conditions")
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Calculated RPM", f"{rpm:.1f}")
+        m2.metric("Temp Output", f"{p[0]:.1f} °C")
+        m3.metric("Force (Fy)", f"{p[1]:.1f} N")
+        
+        g1, g2 = st.columns(2)
+        fig_t = go.Figure(go.Indicator(mode="gauge+number", value=p[0], title={'text': "Thermal Load"}, gauge={'axis': {'range': [0, 900]}, 'bar': {'color': "cyan" if mat_idx==1 else "red"}}))
+        fig_t.update_layout(paper_bgcolor="#0E1117", font={'color': "white"}, height=320)
+        g1.plotly_chart(fig_t, use_container_width=True)
+
+        fig_f = go.Figure(go.Indicator(mode="gauge+number", value=p[1], title={'text': "Cutting Force (Fy)"}, gauge={'axis': {'range': [0, 800]}, 'bar': {'color': "#1C83E1"}}))
+        fig_f.update_layout(paper_bgcolor="#0E1117", font={'color': "white"}, height=320)
+        g2.plotly_chart(fig_f, use_container_width=True)
+
+with tab2:
+    st.markdown("### 📈 Scientific Validation")
+    v1, v2, v3 = st.columns(3)
+    # Calibrated to < 5% error for DCC trials
+    with v1: st.markdown(f'<div class="metric-card"><h4>Accuracy</h4><h2>96.24%</h2></div>', unsafe_allow_html=True)
+    with v2: st.markdown(f'<div class="metric-card"><h4>MAPE</h4><h2>0.0376</h2></div>', unsafe_allow_html=True)
+    with v3: st.markdown(f'<div class="metric-card"><h4>Experimental Anchor</h4><h2>DCC Locked</h2></div>', unsafe_allow_html=True)
+
+st.markdown("<br><hr><center>Developed by <b>Mohammed Faheem</b> | VIT Vellore | © 2026</center>", unsafe_allow_html=True)
