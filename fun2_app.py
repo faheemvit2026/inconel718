@@ -11,8 +11,6 @@ from sklearn.multioutput import MultiOutputRegressor
 @st.cache_data
 def get_hybrid_dual_data():
     np.random.seed(42)
-    
-    # YOUR EXPERIMENTAL DATA (Material 1 = DCC)
     dcc_experimental = [
         [40, 0.08, 0.25, 32, 1, 350.0, 510.5], 
         [40, 0.10, 0.25, 32, 1, 411.2, 496.5], 
@@ -21,8 +19,6 @@ def get_hybrid_dual_data():
         [60, 0.08, 0.25, 32, 1, 670.4, 290.4], 
         [60, 0.10, 0.25, 32, 1, 695.0, 288.0]  
     ]
-    
-    # RESEARCH DATASET (215 Points)
     research_pts = []
     for _ in range(215):
         vc = np.random.uniform(30, 150)
@@ -33,14 +29,12 @@ def get_hybrid_dual_data():
         temp = (vc * 7.8) + (f * 1850) + (ap * 110) - (mat * 55) + np.random.normal(0, 5)
         force = (ap * 1150) + (f * 1450) - (vc * 0.45) + (dia * 1.8) + (mat * -25)
         research_pts.append([vc, f, ap, dia, mat, temp, force])
-        
     combined = dcc_experimental + research_pts
     return pd.DataFrame(combined, columns=['Speed', 'Feed', 'DOC', 'Diameter', 'Material', 'Temp', 'Force'])
 
 df = get_hybrid_dual_data()
 X = df[['Speed', 'Feed', 'DOC', 'Diameter', 'Material']]
 y = df[['Temp', 'Force']]
-
 model = MultiOutputRegressor(RandomForestRegressor(n_estimators=400, random_state=42)).fit(X, y)
 y_pred = model.predict(X)
 
@@ -72,24 +66,31 @@ with tab1:
         st.subheader("Machining Parameters")
         tool_choice = st.radio("Tool Material:", ["Tungsten Carbide (WC)", "Diamond Coated (DCC)"])
         mat_idx = 1 if tool_choice == "Diamond Coated (DCC)" else 0
-        
         dia_v = st.number_input("Workpiece Dia (mm)", value=32.0)
         vc_v = st.number_input("Cutting Speed (Vc)", value=40.0)
         fr_v = st.number_input("Feed Rate (f)", value=0.080, format="%.3f")
         ap_v = st.number_input("Depth of Cut (ap)", value=0.25)
-        
         rpm = (vc_v * 1000) / (math.pi * dia_v)
         p = model.predict([[vc_v, fr_v, ap_v, dia_v, mat_idx]])[0]
 
     with c_out:
         st.subheader(f"Output Analysis: {tool_choice}")
         
+        # --- DANGER & STATUS ALERTS (RESTORED) ---
+        if p[0] > 750:
+            st.error(f"🚨 CRITICAL ERROR: Interface Temperature ({p[0]:.1f}°C) exceeds safety threshold for {tool_choice}!")
+        elif p[0] > 600:
+            st.warning(f"⚠️ DANGER: High thermal load detected. Tool wear rate will increase significantly.")
+        elif p[1] > 600:
+            st.error(f"🚨 FORCE ERROR: Fy Force ({p[1]:.1f}N) is too high! Risk of tool chatter or breakage.")
+        else:
+            st.success(f"✅ STABLE: Machining parameters are within the safe operating zone for {tool_choice}.")
+
         m1, m2, m3 = st.columns(3)
         m1.metric("Calculated RPM", f"{rpm:.1f}")
         m2.metric("Interface Temp", f"{p[0]:.1f} °C")
         m3.metric("Fy Force", f"{p[1]:.1f} N")
         
-        # RESTORED SPEEDOMETERS
         g1, g2 = st.columns(2)
         fig_t = go.Figure(go.Indicator(
             mode="gauge+number", value=p[0],
@@ -117,7 +118,6 @@ with tab2:
     with v3: st.markdown(f'<div class="metric-card"><h4>R² Score</h4><h2>0.9842</h2></div>', unsafe_allow_html=True)
     
     st.markdown("#### Regression Line (Experimental vs Predicted)")
-    # FIXED REGRESSION LINE
     fig_reg = px.scatter(x=df['Temp'], y=y_pred[:,0], template="plotly_dark", 
                          labels={'x': 'Experimental Data', 'y': 'AI Prediction'})
     fig_reg.update_traces(marker=dict(color='#FFD700', size=10, opacity=0.7))
